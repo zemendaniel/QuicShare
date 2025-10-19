@@ -17,6 +17,7 @@ public class Server: QuicPeer
         var listenEndpoint = new IPEndPoint(isIpv6 ? IPAddress.IPv6Any : IPAddress.Any, localPort);
         var serverConnectionOptions = new QuicServerConnectionOptions
         {
+            IdleTimeout = TimeSpan.FromSeconds(15),
             DefaultStreamErrorCode = 0x0A,
             DefaultCloseErrorCode = 0x0B,
             ServerAuthenticationOptions = new SslServerAuthenticationOptions

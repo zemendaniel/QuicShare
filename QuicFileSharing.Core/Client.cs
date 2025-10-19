@@ -15,6 +15,7 @@ public class Client : QuicPeer
         {
             RemoteEndPoint = new IPEndPoint(remoteAddress, remotePort),
             LocalEndPoint = new IPEndPoint(isIpv6 ? IPAddress.IPv6Any : IPAddress.Any, localPort ?? 0),
+            IdleTimeout = TimeSpan.FromSeconds(15),
             DefaultStreamErrorCode = 0x0A,
             DefaultCloseErrorCode = 0x0B,
             ClientAuthenticationOptions = new SslClientAuthenticationOptions
