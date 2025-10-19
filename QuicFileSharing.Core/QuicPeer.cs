@@ -60,7 +60,7 @@ public abstract class QuicPeer
 
     private Channel<string> controlSendQueue = Channel.CreateUnbounded<string>();
 
-    private readonly TaskCompletionSource bothStreamsReady =
+    protected readonly TaskCompletionSource bothStreamsReady =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public TaskCompletionSource<FileTransferStatus>? FileTransferCompleted { get; private set; }
@@ -567,10 +567,10 @@ public abstract class QuicPeer
             await Task.Delay(pingInterval, token);
             if (DateTime.UtcNow - lastKeepAliveReceived > connectionTimeout)
             {
-                // Console.WriteLine("[ERROR] Connection timed out.");
-                // OnDisconnected?.Invoke();
-                // await StopAsync();
-                // break;
+                Console.WriteLine("[ERROR] Connection timed out.");
+                OnDisconnected?.Invoke();
+                await StopAsync();
+                break;
             }
         }
     }

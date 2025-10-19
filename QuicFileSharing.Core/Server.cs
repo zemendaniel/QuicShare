@@ -76,7 +76,7 @@ public class Server: QuicPeer
             throw new InvalidOperationException("Connection not initialized.");
         try
         {
-            while (!token.IsCancellationRequested)
+            while (!token.IsCancellationRequested && !bothStreamsReady.Task.IsCompleted)
             {
                 try
                 {
