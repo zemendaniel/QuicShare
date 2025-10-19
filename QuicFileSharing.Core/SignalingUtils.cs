@@ -108,7 +108,7 @@ public class SignalingUtils: IDisposable
             Console.WriteLine("Using IPv4");
         }
         else
-            throw new InvalidOperationException("No compatible IP address found. Does your peer have IPv6 connectivity?" +
+            throw new InvalidOperationException("No compatible IP address found. Does your peer have IPv6 connectivity? " +
                                                 "If not, you can configure using IPv4 in the settings.");
         
         OwnIp = serverIp;
