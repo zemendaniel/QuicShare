@@ -72,29 +72,19 @@ public abstract class QuicPeer
     
     public bool IsTransferInProgress => isTransferInProgress;
     
-    // private TaskCompletionSource<bool> fileAcceptanceTsc = new();
-
     private DateTime? lastKeepAliveReceived;
-    private static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(15); // adjust if needed
+    private static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(16); // adjust if needed
     private static readonly TimeSpan pingInterval = TimeSpan.FromSeconds(2); // adjust if needed
-    private static readonly int fileChunkSize = 512 * 1024;
-    //private static readonly int messageChunkSize = 1024;
-    private static readonly int fileBufferSize = 4 * 1014 * 1024;
+    private static readonly int fileChunkSize = 1024 * 1024;
+    private static readonly int fileBufferSize = 16 * 1014 * 1024;
+    // todo try adjusting these values, yield in file receiving and sending
     
-    // public OnFileOffered OnFileOffered { get; set; }
-
-    // public event Action? ConnectionReady;
     public event Action? OnDisconnected;
     public event Action<string>? OnFileRejected;
     public event Action<string, long>? OnFileOffered;
     public IProgress<ProgressInfo>? FileTransferProgress { get; set; }
     public TaskCompletionSource<(bool, string?)> FileOfferDecisionTsc { get; private set; } = new();
-
-    // public void SetReceivePath(string folder)
-    // {
-    //     saveFolder = folder;
-    // }
-
+    
     public void SetSendPath(string path)
     {
         filePath = path;

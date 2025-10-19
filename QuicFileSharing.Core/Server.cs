@@ -97,12 +97,6 @@ public class Server: QuicPeer
                             break;
 
                         case 0x02:
-                            // if (!isAuthenticated)
-                            // {
-                            //     Console.WriteLine($"[AUTH] Rejected file stream from unauthenticated client {connection?.RemoteEndPoint}");
-                            //     await stream.DisposeAsync();
-                            //     break;
-                            // }
                             fileStream = stream;     
                             Console.WriteLine("Opened file stream");
                             SetFileStream();
