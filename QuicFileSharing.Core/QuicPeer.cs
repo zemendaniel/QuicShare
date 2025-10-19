@@ -77,9 +77,9 @@ public abstract class QuicPeer
     private DateTime? lastKeepAliveReceived;
     private static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(15); // adjust if needed
     private static readonly TimeSpan pingInterval = TimeSpan.FromSeconds(2); // adjust if needed
-    private static readonly int fileChunkSize = 16 * 1024 * 1024;
-    private static readonly int messageChunkSize = 1024;
-    private static readonly int fileBufferSize = 1014 * 1024;
+    private static readonly int fileChunkSize = 512 * 1024;
+    //private static readonly int messageChunkSize = 1024;
+    private static readonly int fileBufferSize = 4 * 1014 * 1024;
     
     // public OnFileOffered OnFileOffered { get; set; }
 

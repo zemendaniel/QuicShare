@@ -58,8 +58,7 @@ public class Client : QuicPeer
 
         GotConnected = true;
         
-        //_ = Task.Run(PingLoopAsync, token);
-        _ = Task.Factory.StartNew(async () => await PingLoopAsync(), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).Unwrap();
+        _ = Task.Run(PingLoopAsync, token);
         _ = Task.Run(TimeoutCheckLoopAsync, token);
 
         
