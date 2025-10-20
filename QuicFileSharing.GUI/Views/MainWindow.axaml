@@ -63,6 +63,10 @@
         <!-- Settings -->
         <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}">
             <TextBlock>Settings</TextBlock>
+            <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}"></CheckBox>
+            <TextBlock>IPv4 port (if Force IPv4 is enabled):</TextBlock>
+            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4}"
+                           IsEnabled="{Binding ForceIPv4}"/>
             <Button Content="Back" Command="{Binding BackToLobbyCommand}"></Button>
         </StackPanel>
     </Grid>

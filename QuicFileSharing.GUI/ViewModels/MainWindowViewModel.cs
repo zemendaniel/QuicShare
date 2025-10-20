@@ -43,6 +43,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private double progressPercentage; 
     [ObservableProperty]
     private string progressText = string.Empty;
+    [ObservableProperty]
+    private bool forceIPv4;
+    [ObservableProperty]
+    private int portV4 = 55441;
 
     // [ObservableProperty] 
     // private bool isTransferring => peer.IsTransferInProgress; 
@@ -150,8 +154,8 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task CreateRoom()
     {
-        var dummyForceIpv4 = false;
-        var dummyPort = 30001;
+        // var dummyForceIpv4 = false;
+        // var dummyPort = 30001;
         
         peer = new Server();
         SetPeerHandlers();
@@ -188,7 +192,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             answer = await Task.Run(() => 
-                signalingUtils.ConstructAnswerAsync(offer, server.Thumbprint, dummyForceIpv4, dummyPort), cts.Token);
+                signalingUtils.ConstructAnswerAsync(offer, server.Thumbprint, ForceIPv4, PortV4), cts.Token);
         }
         catch (InvalidOperationException ex)
         {
@@ -199,7 +203,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         signalingUtils.CloseUdpSocket();
-        await Task.Run(() => server.StartAsync(!dummyForceIpv4, signalingUtils.OwnPort ?? dummyPort,
+        await Task.Run(() => server.StartAsync(!ForceIPv4, signalingUtils.OwnPort ?? PortV4,
             signalingUtils.ClientThumbprint!), cts.Token);
         
         try

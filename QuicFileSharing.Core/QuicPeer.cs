@@ -77,7 +77,7 @@ public abstract class QuicPeer
     private static readonly TimeSpan pingInterval = TimeSpan.FromSeconds(2); // adjust if needed
     private static readonly int fileChunkSize = 1024 * 1024;
     private static readonly int fileBufferSize = 16 * 1014 * 1024;
-    // todo try adjusting these values, yield in file receiving and sending
+    // todo try adjusting these values, yield in file receiving and sending, flush after n chunks
     
     public event Action? OnDisconnected;
     public event Action<string>? OnFileRejected;
