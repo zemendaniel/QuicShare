@@ -19,6 +19,7 @@ using Microsoft.VisualBasic.CompilerServices;
 using QuicFileSharing.Core;
 using QuicFileSharing.GUI.Models;
 using Avalonia.Styling;
+using QuicFileSharing.GUI.Utils;
 using QuicFileSharing.GUI.Views;
 
 
@@ -46,10 +47,37 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool forceIPv4;
     [ObservableProperty]
-    private int portV4 = 55441;
+    private string portV4Text;
+    [ObservableProperty] 
+    private string apiV4Text;
+    [ObservableProperty] 
+    private string apiV6Text;
+    [ObservableProperty]
+    private string signalingServerText;
+    [ObservableProperty]
+    private string settingsText = string.Empty;
+    
+    private AppConfig appConfig;
+    
+    private int PortV4 => int.Parse(PortV4Text);
 
     // [ObservableProperty] 
     // private bool isTransferring => peer.IsTransferInProgress; 
+
+    public MainWindowViewModel()
+    {
+        LoadConfig();
+    }
+
+    private void LoadConfig()
+    {
+        appConfig = DataStore.Load();
+        ForceIPv4 = appConfig.ForceIPv4;
+        PortV4Text = appConfig.PortV4.ToString();
+        ApiV4Text = appConfig.ApiV4;
+        ApiV6Text = appConfig.ApiV6;
+        SignalingServerText = appConfig.SignalingServer;
+    }
     
     private QuicPeer peer;
     
@@ -259,8 +287,9 @@ public partial class MainWindowViewModel : ViewModelBase
         
         peer.OnDisconnected += () =>
         {
-            State = AppState.Lobby;
             LobbyText = "Connection Error: You got disconnected from your peer.";
+            RoomCode = "";
+            State = AppState.Lobby;
         };
         peer.OnFileOffered += async (fileName, fileSize) =>
         {
@@ -375,5 +404,24 @@ public partial class MainWindowViewModel : ViewModelBase
     private void OpenSettings()
     {
         State = AppState.Settings;
+    }
+
+    [RelayCommand]
+    private void SaveSettings()
+    {
+        
+        
+        
+        var config = new AppConfig
+        {
+            ForceIPv4 = ForceIPv4,
+            PortV4 = PortV4,
+            ApiV4 = ApiV4Text,
+            ApiV6 = ApiV6Text,
+            SignalingServer = SignalingServerText
+        };
+        DataStore.Save(config);
+        
+        LoadConfig();
     }
 }

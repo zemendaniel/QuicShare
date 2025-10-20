@@ -37,7 +37,7 @@ public class WebSocketSignaling: IAsyncDisposable
         if (role == Role.Client)
         {
             if (string.IsNullOrWhiteSpace(roomId))
-                return (false, "Client must provide a room code");
+                return (false, "You must provide a room code.");
             uriBuilder.Append($"&room_id={roomId}");
         }
 

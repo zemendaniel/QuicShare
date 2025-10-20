@@ -148,7 +148,7 @@ public class SignalingUtils: IDisposable
         {
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(5);
-            var response = await httpClient.GetStringAsync("https://ipv6.seeip.org/");
+            var response = await httpClient.GetStringAsync("https://ipv6.seeip.org");
             if (IPAddress.TryParse(response.Trim(), out var ip) && ip.AddressFamily == AddressFamily.InterNetworkV6)
                 return ip;
         }

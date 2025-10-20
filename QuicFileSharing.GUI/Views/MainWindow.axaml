@@ -10,8 +10,7 @@
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="QuicShare"
-        MinHeight="610"
-        MinWidth="910">
+        >
     
     <Window.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
@@ -23,35 +22,40 @@
     
     <Grid Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center" Width="900" Height="600">
         <!-- Lobby -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
-            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}">
-            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,16" TextAlignment="Center">What would you like to do?</TextBlock>
-            <TextBlock FontWeight="Bold" FontSize="20" TextAlignment="Center">Join an existing room:</TextBlock>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                    IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}">
+            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,20" TextAlignment="Center" Padding="10,5">What would you like to do?</TextBlock>
+            <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Join an existing room:</TextBlock>
             <StackPanel Orientation="Horizontal" 
                         HorizontalAlignment="Center" 
                         VerticalAlignment="Center" 
-                        Margin="10">
+                        Margin="0,0,0,16">
                 <TextBox Text="{Binding RoomCode}" 
                          Watermark="Enter your code here..." 
                          Width="300" 
                          TextAlignment="Center"
+                         VerticalContentAlignment="Center"
                          VerticalAlignment="Center"
-                         Margin="0,0,10,0">
+                         Margin="0,0,10,0"
+                         Padding="8,4">
                     <TextBox.KeyBindings>
                         <KeyBinding Gesture="Enter" Command="{Binding JoinRoomCommand}"/>
                     </TextBox.KeyBindings>
                 </TextBox>
-                <Button Content="Join Room" 
+                <Button Content="Join" 
                         Command="{Binding JoinRoomCommand}" 
-                        Width="100"
-                        VerticalAlignment="Center"/>
+                        VerticalAlignment="Center"
+                        Padding="12,6"/>
             </StackPanel>
-            <Border Height="1" Background="#E0E0E0" Margin="0,10,0,10"/>
-            <TextBlock>Create a new room:</TextBlock>
-            <Button Content="Create Room" Command="{Binding CreateRoomCommand}"/>
-            <TextBlock Text="{Binding LobbyText}"></TextBlock>
-            <Button Content="Settings" Command="{Binding OpenSettingsCommand}"></Button>
+            <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Create a new room:</TextBlock>
+            <Button HorizontalAlignment="Center" Content="Create Room" Command="{Binding CreateRoomCommand}" Margin="0,0,0,8" Padding="12,6"/>
+            <TextBlock Text="{Binding LobbyText}" TextWrapping="Wrap" 
+                       Margin="0,0,0,0" Padding="5,3" TextAlignment="Center"/>
+            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="Settings" 
+                    Command="{Binding OpenSettingsCommand}" Margin="10" 
+                    Padding="12,6"/>
         </StackPanel>
+        
         
         <!-- WaitingForConnection -->
         <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.WaitingForConnection}}">
@@ -77,14 +81,32 @@
         </StackPanel> 
         
         <!-- Settings -->
-        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}">
-            <TextBlock>Settings</TextBlock>
-            <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}"></CheckBox>
-            <TextBlock>IPv4 port (if Force IPv4 is enabled):</TextBlock>
-            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4}"
-                           IsEnabled="{Binding ForceIPv4}"/>
-            <Button Content="Back" Command="{Binding BackToLobbyCommand}"></Button>
-        </StackPanel>
+    <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                Margin="20">
+        <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Settings</TextBlock>
+        <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
+            Leave empty and save to use default values.
+        </TextBlock>
+        <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Margin="0,0,0,12"/>
+        <TextBlock Margin="0,0,0,8">IPv4 port (1-65535) (if Force IPv4 is enabled):</TextBlock>
+        <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
+                       IsEnabled="{Binding ForceIPv4}"
+                       Increment="1"
+                       FormatString="0"
+                       Margin="0,0,0,16">
+        </NumericUpDown>
+        <TextBlock Margin="0,0,0,8">Signaling Server:</TextBlock>
+        <TextBox Text="{Binding SignalingServerText}" Margin="0,0,0,16"/>
+        <TextBlock Margin="0,0,0,8">IPv6 echo API:</TextBlock>
+        <TextBox Text="{Binding ApiV6Text}" Margin="0,0,0,16"/>
+        <TextBlock Margin="0,0,0,8">IPv4 echo API</TextBlock>
+        <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
+        <TextBlock Text="{Binding SettingsText}"></TextBlock>
+        <Button Content="Back" Command="{Binding BackToLobbyCommand}" Margin="0,0,0,0"/>
+    </StackPanel>
+
     </Grid>
     
 
