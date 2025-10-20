@@ -59,7 +59,7 @@ public partial class MainWindowViewModel : ViewModelBase
     
     private AppConfig appConfig;
     
-    private int PortV4 => int.Parse(PortV4Text);
+    private int PortV4 => appConfig.PortV4;
 
     // [ObservableProperty] 
     // private bool isTransferring => peer.IsTransferInProgress; 
@@ -88,7 +88,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SetPeerHandlers();
         var client = (peer as Client)!;
         
-        using var signalingUtils = new SignalingUtils();
+        using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
         await using var signaling = new WebSocketSignaling(WsBaseUri);
         
         var cts = new CancellationTokenSource();
@@ -182,16 +182,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task CreateRoom()
     {
-        // var dummyForceIpv4 = false;
-        // var dummyPort = 30001;
-        
         peer = new Server();
         SetPeerHandlers();
 
         LobbyText = "Connecting to coordination server...";
         var server = (peer as Server)!;
         var cts = new CancellationTokenSource();
-        using var signalingUtils = new SignalingUtils();
+        using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
         await using var signaling = new WebSocketSignaling(WsBaseUri);
         
         signaling.OnDisconnected += async (_, description) =>
@@ -268,7 +265,7 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
         var file = files[0];
-        var path = ResolveFilePath(file);
+        var path = StaticUtils.ResolveFilePath(file);
         if (path is null)
         {
             peer.IsSending = false;
@@ -313,21 +310,6 @@ public partial class MainWindowViewModel : ViewModelBase
             RoomText = msg;
         };
     }
-    private static string? ResolveFilePath(IStorageFile file)
-    {
-        if (file.Path is not { IsAbsoluteUri: true, Scheme: "file" })
-            return null;
-        
-        var path = Uri.UnescapeDataString(file.Path.LocalPath);
-
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return path;
-        path = path.Replace('/', '\\');
-
-        if (!string.IsNullOrEmpty(file.Path.Host))
-            path = $@"\\{file.Path.Host}{path[1..]}";
-
-        return path;
-    }
 
     private void HandleFileTransferCompleted(FileTransferStatus status)
     {
@@ -367,14 +349,14 @@ public partial class MainWindowViewModel : ViewModelBase
                 sb.Append($" ({FormatBytes((long)info.SpeedBytesPerSecond)}/s)");
 
             if (info.EstimatedRemaining is { } eta)
-                sb.Append($" ({FormatTime(eta)})");
+                sb.Append($" ({StaticUtils.FormatTime(eta)})");
 
             if (info.IsCompleted)
             {
                 if (info.AverageSpeedBytesPerSecond.HasValue && info.TotalTime.HasValue)
                 {
                     sb.Clear();
-                    sb.Append($"{FormatBytes(info.TotalBytes)} transferred in {FormatTimeShort(info.TotalTime.Value)} ");
+                    sb.Append($"{FormatBytes(info.TotalBytes)} transferred in {StaticUtils.FormatTimeShort(info.TotalTime.Value)} ");
                     sb.Append($"({FormatBytes((long)info.AverageSpeedBytesPerSecond.Value)}/s average)");
                 }
             }
@@ -382,18 +364,7 @@ public partial class MainWindowViewModel : ViewModelBase
             ProgressText = sb.ToString();
         });
     }
-    private static string FormatTime(TimeSpan time)
-    {
-        if (time.TotalHours >= 1)
-            return $"{(int)time.TotalHours}h {time.Minutes}m {time.Seconds}s remaining";
-        return time.TotalMinutes >= 1 ? $"{time.Minutes}m {time.Seconds}s remaining" : $"{time.Seconds}s remaining";
-    }
-    private static string FormatTimeShort(TimeSpan time)
-    {
-        if (time.TotalHours >= 1)
-            return $"{(int)time.TotalHours}h {time.Minutes}m {time.Seconds}s";
-        return time.TotalMinutes >= 1 ? $"{time.Minutes}m {time.Seconds}s" : $"{time.Seconds}s";
-    }
+    
     
     [RelayCommand]
     private void BackToLobby()
@@ -409,24 +380,70 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void SaveSettings()
     {
+        SettingsText = "";
+        int port;
+        if (!string.IsNullOrWhiteSpace(PortV4Text))
+        {
+            if (!int.TryParse(PortV4Text, out port) || port < 1 || port > 65535)
+            {
+                SettingsText = "Invalid port number. Must be between 1 and 65535.";
+                return;
+            }
+        }
+        else
+        {
+            port = new AppConfig().PortV4;
+        }
+
+        if (!string.IsNullOrWhiteSpace(SignalingServerText) &&
+            !StaticUtils.IsValidWebSocketUri(SignalingServerText))
+        {
+            SettingsText = "Invalid signaling server URL. Must start with ws:// or wss://.";
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ApiV6Text) && !StaticUtils.IsValidHttpUrl(ApiV6Text))
+        {
+            SettingsText = "Invalid API URL for IPv6. Must start with http:// or https://.";
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(ApiV4Text) && !StaticUtils.IsValidHttpUrl(ApiV4Text))
+        {
+            SettingsText = "Invalid API URL for IPv4. Must start with http:// or https://.";
+            return;
+        }
+
+        var defaults = new AppConfig(); 
+
         var config = new AppConfig
         {
+            PortV4 = port,
             ForceIPv4 = ForceIPv4,
-            PortV4 = PortV4,
-            ApiV4 = ApiV4Text,
-            ApiV6 = ApiV6Text,
-            SignalingServer = SignalingServerText
+            SignalingServer = string.IsNullOrWhiteSpace(SignalingServerText) 
+                ? defaults.SignalingServer 
+                : SignalingServerText,
+            ApiV6 = string.IsNullOrWhiteSpace(ApiV6Text) 
+                ? defaults.ApiV6 
+                : ApiV6Text,
+            ApiV4 = string.IsNullOrWhiteSpace(ApiV4Text) 
+                ? defaults.ApiV4 
+                : ApiV4Text
         };
+
         DataStore.Save(config);
-        
         LoadConfig();
         State = AppState.Lobby;
     }
+
+
+
 
     [RelayCommand]
     private void CloseSettings()
     {
         LoadConfig();
         State = AppState.Lobby;
+        SettingsText = "";
     }
 }

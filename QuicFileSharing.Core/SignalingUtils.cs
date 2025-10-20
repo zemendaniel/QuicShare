@@ -32,18 +32,19 @@ public class SignalingMessage
     public required string Data { get; init; }
 }
 
-public class SignalingUtils: IDisposable
+public class SignalingUtils(string ipv4Echo, string ipv6Echo): IDisposable
 {
     public static readonly JsonSerializerOptions Options = new()
     {
         PropertyNameCaseInsensitive = true
     };
+
+   
     
     public IPAddress? PeerIp { get; private set; }
     private IPAddress? OwnIp { get; set; }
     public int PeerPort { get; private set; }
     public int? OwnPort { get; private set; }  
-    public bool ForceIpv4 { get; private set; } 
     public string? ClientThumbprint { get; private set; }
     public string? ServerThumbprint { get; private set; }
     private UdpClient? portKeepAliveSocket;
@@ -142,13 +143,13 @@ public class SignalingUtils: IDisposable
         portKeepAliveSocket = new(localEndpoint);
         return portKeepAliveSocket.Client.LocalEndPoint is IPEndPoint ep ? ep.Port : throw new InvalidOperationException("Failed to get free UDP port");
     }
-    private static async Task<IPAddress?> GetPublicIpv6Async()
+    private async Task<IPAddress?> GetPublicIpv6Async()
     {
         try
         {
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(5);
-            var response = await httpClient.GetStringAsync("https://ipv6.seeip.org");
+            var response = await httpClient.GetStringAsync(ipv6Echo);
             if (IPAddress.TryParse(response.Trim(), out var ip) && ip.AddressFamily == AddressFamily.InterNetworkV6)
                 return ip;
         }
@@ -158,13 +159,13 @@ public class SignalingUtils: IDisposable
         }
         return null;
     }
-    private static async Task<IPAddress?> GetPublicIpv4Async()
+    private async Task<IPAddress?> GetPublicIpv4Async()
     {
         try
         {
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(5);
-            var response = await httpClient.GetStringAsync("https://api.ipify.org");
+            var response = await httpClient.GetStringAsync(ipv4Echo);
             if (IPAddress.TryParse(response.Trim(), out var ip) && ip.AddressFamily == AddressFamily.InterNetwork)
                 return ip;
         }

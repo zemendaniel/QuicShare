@@ -1,17 +1,49 @@
 ﻿using System;
 using System.IO;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace QuicFileSharing.GUI.Utils;
 
 public class AppConfig
 {
-    public int PortV4 { get; set; } = 55441;
-    public bool ForceIPv4 { get; set; } = false;
-    public string SignalingServer { get; set; } = "ws://quic-share.zemendaniel.hu:8080";
-    public string ApiV6 { get; set; } = "https://ipv6.seeip.org";
-    public string ApiV4 { get; set; } = "https://api.ipify.org";
+    public int PortV4 { get; set; }
+    public bool ForceIPv4 { get; set; }
+    public string SignalingServer { get; set; }
+    public string ApiV6 { get; set; }
+    public string ApiV4 { get; set; }
+
+    private const int DefaultPortV4 = 55441;
+    private const bool DefaultForceIPv4 = false;
+    private const string DefaultSignalingServer = "ws://quic-share.zemendaniel.hu:8080";
+    private const string DefaultApiV6 = "https://ipv6.seeip.org";
+    private const string DefaultApiV4 = "https://api.ipify.org";
+
+    public AppConfig(
+        int? portV4 = null,
+        bool? forceIPv4 = null,
+        string? signalingServer = null,
+        string? apiV6 = null,
+        string? apiV4 = null)
+    {
+        PortV4 = portV4 ?? DefaultPortV4;
+        ForceIPv4 = forceIPv4 ?? DefaultForceIPv4;
+        SignalingServer = string.IsNullOrWhiteSpace(signalingServer) ? DefaultSignalingServer : signalingServer;
+        ApiV6 = string.IsNullOrWhiteSpace(apiV6) ? DefaultApiV6 : apiV6;
+        ApiV4 = string.IsNullOrWhiteSpace(apiV4) ? DefaultApiV4 : apiV4;
+    }
+    
+    [JsonConstructor]
+    public AppConfig(int PortV4, bool ForceIPv4, string SignalingServer, string ApiV6, string ApiV4)
+    {
+        this.PortV4 = PortV4;
+        this.ForceIPv4 = ForceIPv4;
+        this.SignalingServer = SignalingServer;
+        this.ApiV6 = ApiV6;
+        this.ApiV4 = ApiV4;
+    }
 }
+
 
 public static class DataStore
 {
