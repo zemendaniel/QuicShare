@@ -409,9 +409,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private void SaveSettings()
     {
-        
-        
-        
         var config = new AppConfig
         {
             ForceIPv4 = ForceIPv4,
@@ -423,5 +420,13 @@ public partial class MainWindowViewModel : ViewModelBase
         DataStore.Save(config);
         
         LoadConfig();
+        State = AppState.Lobby;
+    }
+
+    [RelayCommand]
+    private void CloseSettings()
+    {
+        LoadConfig();
+        State = AppState.Lobby;
     }
 }

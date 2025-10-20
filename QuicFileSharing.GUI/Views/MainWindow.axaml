@@ -9,8 +9,7 @@
         x:Class="QuicFileSharing.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="QuicShare"
-        >
+        Title="QuicShare">
     
     <Window.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
@@ -20,7 +19,7 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
     
-    <Grid Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center" Width="900" Height="600">
+    <Grid Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center">
         <!-- Lobby -->
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                     IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}">
@@ -104,7 +103,8 @@
         <TextBlock Margin="0,0,0,8">IPv4 echo API</TextBlock>
         <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
         <TextBlock Text="{Binding SettingsText}"></TextBlock>
-        <Button Content="Back" Command="{Binding BackToLobbyCommand}" Margin="0,0,0,0"/>
+        <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}" Margin="0,0,0,8"/>
+        <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}" Margin="0,0,0,0"/>
     </StackPanel>
 
     </Grid>
