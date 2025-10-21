@@ -38,8 +38,6 @@ public partial class FileOfferDialogViewModel : ViewModelBase
         }
         
         var folderPath = ResolveFolderPath(folders[0]);
-        Console.WriteLine("path in accept:");
-        Console.WriteLine(folderPath);
         tcs.SetResult((true, folderPath));
         
     }

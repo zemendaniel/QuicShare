@@ -14,6 +14,7 @@
     
     <Window.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </Window.Resources>
     
     <Design.DataContext>
@@ -78,11 +79,15 @@
                        TextAlignment="Center"
                        Padding="10,5"
                        Text="{Binding RoomCode, StringFormat='You are in room: {0}'}"/>
-            <Button Content="Send File" Command="{Binding SendFileCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
-            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
+            <Button Content="Send File" HorizontalAlignment="Center" Margin="0,0,0,4" 
+                    Command="{Binding SendFileCommand}" 
+                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                    IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
+            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20"
+                       IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}">
                 You are open to receiving files.
             </TextBlock>
-            <TextBlock Text="{Binding RoomText}"></TextBlock>
+            <TextBlock Text="{Binding RoomText}" TextAlignment="Center"></TextBlock>
             <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400">
                 <ProgressBar Minimum="0" Maximum="100"
                              Value="{Binding ProgressPercentage}" Height="20"/>

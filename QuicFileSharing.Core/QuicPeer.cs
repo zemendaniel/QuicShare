@@ -82,6 +82,7 @@ public abstract class QuicPeer
     public event Action? OnDisconnected;
     public event Action<string>? OnFileRejected;
     public event Action<string, long>? OnFileOffered;
+    public event Action? OnTransferStateChanged;
     public IProgress<ProgressInfo>? FileTransferProgress { get; set; }
     public TaskCompletionSource<(bool, string?)> FileOfferDecisionTsc { get; private set; } = new();
     
@@ -189,6 +190,7 @@ public abstract class QuicPeer
         filePath = null;
         saveFolder = null;
         isTransferInProgress = false;
+        OnTransferStateChanged?.Invoke();
     }
     
     private async Task 
@@ -232,6 +234,7 @@ public abstract class QuicPeer
                     return;
                 }
                 isTransferInProgress = true;
+                OnTransferStateChanged?.Invoke();
 
                 if (IsSending)
                 {
@@ -332,6 +335,7 @@ public abstract class QuicPeer
         }
         
         isTransferInProgress = true;
+        OnTransferStateChanged?.Invoke();
 
         var hashQueue = Channel.CreateBounded<ArraySegment<byte>>(new BoundedChannelOptions(128)
         {

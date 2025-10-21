@@ -28,7 +28,6 @@ namespace QuicFileSharing.GUI.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private const string WsBaseUri = "ws://152.53.123.174:8080";
     [ObservableProperty]
     private AppState state = AppState.Lobby;
     [ObservableProperty]
@@ -57,6 +56,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private string signalingServerText;
     [ObservableProperty]
     private string settingsText = string.Empty;
+    [ObservableProperty]
+    private bool isTransferInProgress;
     
     private AppConfig appConfig;
     
@@ -93,7 +94,7 @@ public partial class MainWindowViewModel : ViewModelBase
         ProgressPercentage = 0;
         
         using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
-        await using var signaling = new WebSocketSignaling(WsBaseUri);
+        await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
         
         var cts = new CancellationTokenSource();
 
@@ -102,9 +103,9 @@ public partial class MainWindowViewModel : ViewModelBase
             if (client.GotConnected) return;
             if (cts.Token.IsCancellationRequested) return;
             await cts.CancelAsync();
-            State = AppState.Lobby;
+            RoomCode = string.Empty;
             LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ? "Something went wrong with your peer." : description)}";
-            RoomCode = "";
+            State = AppState.Lobby;
 
         };
         LobbyText = "Connecting to peer...";
@@ -194,17 +195,17 @@ public partial class MainWindowViewModel : ViewModelBase
         var server = (peer as Server)!;
         var cts = new CancellationTokenSource();
         using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
-        await using var signaling = new WebSocketSignaling(WsBaseUri);
+        await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
         
         signaling.OnDisconnected += async (_, description) =>
         {
             if (server.ClientConnected.Task.IsCompleted) return;
             if (cts.Token.IsCancellationRequested) return;
             await cts.CancelAsync();
-            State = AppState.Lobby;            
+            RoomCode = string.Empty;
             LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ?
                 "The signaling was closed before your peer could join." : description)}";
-            RoomCode = "";
+            State = AppState.Lobby;            
         };
         var (success, errorMessage) = await Task.Run(() => signaling.ConnectAsync(Role.Server), cts.Token);
         if (success is not true)
@@ -313,6 +314,10 @@ public partial class MainWindowViewModel : ViewModelBase
         peer.OnFileRejected += msg =>
         {
             RoomText = msg;
+        };
+        peer.OnTransferStateChanged += () =>
+        {
+            IsTransferInProgress = peer.IsTransferInProgress;
         };
     }
 
