@@ -58,63 +58,69 @@
         
         <!-- WaitingForConnection -->
         <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.WaitingForConnection}}">
-            <TextBlock Text="Waiting for incoming connection..."></TextBlock>
-            <TextBlock Text="Share this code with your peer:"></TextBlock>
-            <SelectableTextBlock Text="{Binding RoomCode}"></SelectableTextBlock>
+            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">
+                Share this code with your peer:
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 0, 8">
+                <SelectableTextBlock Margin="0, 0, 4, 0" Text="{Binding RoomCode}" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button VerticalAlignment="Center" Command="{Binding CopyRoomCodeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}">Copy to clipboard</Button>
+            </StackPanel>
+            <TextBlock FontWeight="Light" TextAlignment="Center" FontSize="12" Text="Waiting for incoming connection..."></TextBlock>
         </StackPanel>
         
         <!-- InRoom -->
-        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}">
-            <SelectableTextBlock Text="You are in a room"></SelectableTextBlock>
-            <TextBlock Text="{Binding RoomCode}"></TextBlock>
+        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock FontWeight="SemiBold"
+                       FontSize="24"
+                       Margin="0,0,0,8"
+                       TextAlignment="Center"
+                       Padding="10,5"
+                       Text="{Binding RoomCode, StringFormat='You are in room: {0}'}"/>
             <Button Content="Send File" Command="{Binding SendFileCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
+                You are open to receiving files.
+            </TextBlock>
             <TextBlock Text="{Binding RoomText}"></TextBlock>
             <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400">
                 <ProgressBar Minimum="0" Maximum="100"
                              Value="{Binding ProgressPercentage}" Height="20"/>
-    
                 <TextBlock Text="{Binding ProgressText}" FontWeight="Bold"/>
-    
             </StackPanel>
-
         </StackPanel> 
         
         <!-- Settings -->
-    <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}"
+        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}"
                 VerticalAlignment="Center"
-                HorizontalAlignment="Center"
-                Margin="20">
-        <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Settings</TextBlock>
-        <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
-            Leave empty and save to use default values.
-        </TextBlock>
-        <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Margin="0,0,0,12"/>
-        <TextBlock Margin="0,0,0,8">IPv4 port (1-65535) (if Force IPv4 is enabled):</TextBlock>
-        <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
-                       IsEnabled="{Binding ForceIPv4}"
-                       Increment="1"
-                       FormatString="0"
-                       Margin="0,0,0,16">
-        </NumericUpDown>
-        <TextBlock Margin="0,0,0,8">Signaling Server:</TextBlock>
-        <TextBox Text="{Binding SignalingServerText}" Margin="0,0,0,16"/>
-        <TextBlock Margin="0,0,0,8">IPv6 echo API:</TextBlock>
-        <TextBox Text="{Binding ApiV6Text}" Margin="0,0,0,16"/>
-        <TextBlock Margin="0,0,0,8">IPv4 echo API</TextBlock>
-        <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
-        <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20" TextWrapping="Wrap"
-                   MaxWidth="500">
-            If you are using your own APIs, make sure that they are working and are accessible. Also make sure that you and
-            your peer are using the same signaling server.
-        </TextBlock>
-        <TextBlock Text="{Binding SettingsText}" MaxWidth="500" TextWrapping="Wrap"></TextBlock>
-        <StackPanel Orientation="Horizontal" Spacing="8"  HorizontalAlignment="Center">
-            <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}" Margin="0,0,0,0"/>
-            <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}" Margin="0,0,0,0"/>
+                HorizontalAlignment="Center">
+            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Settings</TextBlock>
+            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
+                Leave empty and save to use default values.
+            </TextBlock>
+            <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Margin="0,0,0,12"/>
+            <TextBlock Margin="0,0,0,8">IPv4 port (1-65535) (if Force IPv4 is enabled):</TextBlock>
+            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
+                           IsEnabled="{Binding ForceIPv4}"
+                           Increment="1"
+                           FormatString="0"
+                           Margin="0,0,0,16">
+            </NumericUpDown>
+            <TextBlock Margin="0,0,0,8">Signaling Server:</TextBlock>
+            <TextBox Text="{Binding SignalingServerText}" Margin="0,0,0,16"/>
+            <TextBlock Margin="0,0,0,8">IPv6 echo API:</TextBlock>
+            <TextBox Text="{Binding ApiV6Text}" Margin="0,0,0,16"/>
+            <TextBlock Margin="0,0,0,8">IPv4 echo API</TextBlock>
+            <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
+            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20" TextWrapping="Wrap"
+                       MaxWidth="500">
+                If you are using your own APIs, make sure that they are working and are accessible. Also make sure that you and
+                your peer are using the same signaling server.
+            </TextBlock>
+            <TextBlock Text="{Binding SettingsText}" MaxWidth="500" TextWrapping="Wrap"></TextBlock>
+            <StackPanel Orientation="Horizontal" Spacing="8"  HorizontalAlignment="Center">
+                <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}"/>
+                <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}"/>
+            </StackPanel>
         </StackPanel>
-    </StackPanel>
-
     </Grid>
-    
-
 </Window>

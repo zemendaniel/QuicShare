@@ -12,6 +12,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Rendering;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -449,5 +450,14 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadConfig();
         State = AppState.Lobby;
         SettingsText = "";
+    }
+
+    [RelayCommand]
+    private async Task CopyRoomCode(Window window)
+    {
+        if (window.Clipboard is null)
+            return;
+        
+        await window.Clipboard.SetTextAsync(RoomCode);
     }
 }
