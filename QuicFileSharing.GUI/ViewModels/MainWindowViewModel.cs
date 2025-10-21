@@ -87,6 +87,9 @@ public partial class MainWindowViewModel : ViewModelBase
         peer = new Client(); 
         SetPeerHandlers();
         var client = (peer as Client)!;
+
+        ProgressText = "";
+        ProgressPercentage = 0;
         
         using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
         await using var signaling = new WebSocketSignaling(WsBaseUri);
@@ -99,7 +102,8 @@ public partial class MainWindowViewModel : ViewModelBase
             if (cts.Token.IsCancellationRequested) return;
             await cts.CancelAsync();
             State = AppState.Lobby;
-            LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ? "Unknown error" : description)}";
+            LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ? "Something went wrong with your peer." : description)}";
+            RoomCode = "";
 
         };
         LobbyText = "Connecting to peer...";
@@ -199,6 +203,7 @@ public partial class MainWindowViewModel : ViewModelBase
             State = AppState.Lobby;            
             LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ?
                 "The signaling was closed before your peer could join." : description)}";
+            RoomCode = "";
         };
         var (success, errorMessage) = await Task.Run(() => signaling.ConnectAsync(Role.Server), cts.Token);
         if (success is not true)
@@ -281,7 +286,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void SetPeerHandlers()
     {
-        
         peer.OnDisconnected += () =>
         {
             LobbyText = "Connection Error: You got disconnected from your peer.";
@@ -343,6 +347,8 @@ public partial class MainWindowViewModel : ViewModelBase
             ProgressPercentage = info.Percentage;
 
             var sb = new StringBuilder();
+
+            sb.Append($"{ProgressPercentage:F1}% — ");
             sb.Append($"{FormatBytes(info.BytesTransferred)} / {FormatBytes(info.TotalBytes)}");
 
             if (info.SpeedBytesPerSecond > 0)
@@ -353,18 +359,16 @@ public partial class MainWindowViewModel : ViewModelBase
 
             if (info.IsCompleted)
             {
-                if (info.AverageSpeedBytesPerSecond.HasValue && info.TotalTime.HasValue)
+                if (info is { AverageSpeedBytesPerSecond: not null, TotalTime: not null })
                 {
                     sb.Clear();
                     sb.Append($"{FormatBytes(info.TotalBytes)} transferred in {StaticUtils.FormatTimeShort(info.TotalTime.Value)} ");
                     sb.Append($"({FormatBytes((long)info.AverageSpeedBytesPerSecond.Value)}/s average)");
                 }
             }
-
             ProgressText = sb.ToString();
         });
     }
-    
     
     [RelayCommand]
     private void BackToLobby()
@@ -398,19 +402,22 @@ public partial class MainWindowViewModel : ViewModelBase
         if (!string.IsNullOrWhiteSpace(SignalingServerText) &&
             !StaticUtils.IsValidWebSocketUri(SignalingServerText))
         {
-            SettingsText = "Invalid signaling server URL. Must start with ws:// or wss://.";
+            SettingsText = "Invalid signaling server URL. " +
+                           "Make sure it starts with ws:// or wss:// and that the domain, host and path are correct.";
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(ApiV6Text) && !StaticUtils.IsValidHttpUrl(ApiV6Text))
         {
-            SettingsText = "Invalid API URL for IPv6. Must start with http:// or https://.";
+            SettingsText = "Invalid API URL for IPv6. " +
+                           "Make sure it starts with http:// or https:// and that the domain, host, port and path are correct.";
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(ApiV4Text) && !StaticUtils.IsValidHttpUrl(ApiV4Text))
         {
-            SettingsText = "Invalid API URL for IPv4. Must start with http:// or https://.";
+            SettingsText = "Invalid API URL for IPv4. " +
+                           "Make sure it starts with http:// or https:// and that the domain, host, port and path are correct.";
             return;
         }
 
@@ -435,10 +442,7 @@ public partial class MainWindowViewModel : ViewModelBase
         LoadConfig();
         State = AppState.Lobby;
     }
-
-
-
-
+    
     [RelayCommand]
     private void CloseSettings()
     {
