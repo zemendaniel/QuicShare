@@ -9,7 +9,8 @@
         x:Class="QuicFileSharing.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="QuicShare">
+        Title="QuicShare"
+        WindowStartupLocation="CenterScreen">
     
     <Window.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
