@@ -472,7 +472,7 @@ public abstract class QuicPeer
                 TotalBytes = fileSize,
                 SpeedBytesPerSecond = speed
             });
-            
+            await Task.Yield();
         }
 
         hashQueue.Writer.Complete();
