@@ -75,7 +75,7 @@ public abstract class QuicPeer
     private DateTime? lastKeepAliveReceived;
     private static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(16); // adjust if needed
     private static readonly TimeSpan pingInterval = TimeSpan.FromSeconds(2); // adjust if needed
-    private static readonly int fileChunkSize = 64 * 1024;
+    private static readonly int fileChunkSize = 1024 * 1024;
     private static readonly int fileBufferSize = 16 * 1014 * 1024;
     // todo try adjusting these values, yield in file receiving and sending, flush after n chunks
     
@@ -362,6 +362,7 @@ public abstract class QuicPeer
         
         while (true)
         {
+            Console.WriteLine(fileStream.CanWrite);
             var buffer = ArrayPool<byte>.Shared.Rent(fileChunkSize);
             var bytesRead = await inputFile.ReadAsync(buffer.AsMemory(0, fileChunkSize), token);
             if (bytesRead == 0)
@@ -446,10 +447,9 @@ public abstract class QuicPeer
 
         while (totalBytesReceived < fileSize)
         {
-            // So we basically don't have to copy the chunk to a new buffer, we can just overwrite the existing one
-            // after we read it.
             var buffer = ArrayPool<byte>.Shared.Rent(fileChunkSize);
             var bytesRead = await fileStream.ReadAsync(buffer.AsMemory(0, fileChunkSize), token);
+            Console.WriteLine($"Received {bytesRead} bytes.");
             lastKeepAliveReceived = DateTime.UtcNow;
             if (bytesRead == 0)
             {
