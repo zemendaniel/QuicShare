@@ -89,9 +89,6 @@ public partial class MainWindowViewModel : ViewModelBase
         peer = new Client(); 
         SetPeerHandlers();
         var client = (peer as Client)!;
-
-        ProgressText = "";
-        ProgressPercentage = 0;
         
         using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
         await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
@@ -176,6 +173,8 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
+            ProgressPercentage = 0;
+            ProgressText = "";
             State = AppState.InRoom;
             await Task.Run(signaling.CloseAsync, cts.Token);
         }
@@ -249,6 +248,8 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         await server.ClientConnected.Task;
+        ProgressPercentage = 0;
+        ProgressText = "";
         State = AppState.InRoom;
         await Task.Run(signaling.CloseAsync, CancellationToken.None);
     }
