@@ -372,6 +372,7 @@ public abstract class QuicPeer
             }
 
             await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), token);
+            // await fileStream.FlushAsync(token);
             await hashQueue.Writer.WriteAsync(new ArraySegment<byte>(buffer, 0, bytesRead), token);
 
             totalBytesSent += bytesRead;
@@ -388,7 +389,7 @@ public abstract class QuicPeer
                     SpeedBytesPerSecond = speed
                 });
             }
-            await Task.Yield();
+            //await Task.Yield();
         }
 
         await fileStream.FlushAsync(token);
