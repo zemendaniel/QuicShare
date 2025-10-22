@@ -294,6 +294,7 @@ public partial class MainWindowViewModel : ViewModelBase
             LobbyText = "Connection Error: You got disconnected from your peer.";
             RoomCode = "";
             State = AppState.Lobby;
+            IsTransferInProgress = false;
         };
         peer.OnFileOffered += async (fileName, fileSize) =>
         {

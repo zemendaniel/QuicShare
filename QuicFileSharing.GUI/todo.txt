@@ -1,8 +1,8 @@
 a lot of testing!!!!
 
 proper ui
+ditch word based codes
 ui notifications in receiving too
-receiving gets disconnected
 if quic is not supported notify user on join and create room.
 fileofferwindow specify path first
 
