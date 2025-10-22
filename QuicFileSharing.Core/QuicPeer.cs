@@ -389,7 +389,7 @@ public abstract class QuicPeer
                     SpeedBytesPerSecond = speed
                 });
             }
-            //await Task.Yield();
+            await Task.Yield();
         }
 
         await fileStream.FlushAsync(token);
