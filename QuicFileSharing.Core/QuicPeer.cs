@@ -330,7 +330,6 @@ public abstract class QuicPeer
             throw new InvalidOperationException("File stream not initialized.");
         if (isTransferInProgress)
         {
-            Console.WriteLine("File transfer already in progress in sendfileasync");
             return;
         }
         
@@ -372,7 +371,7 @@ public abstract class QuicPeer
             }
 
             await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), token);
-            await fileStream.FlushAsync(token);
+            // await fileStream.FlushAsync(token);
             await hashQueue.Writer.WriteAsync(new ArraySegment<byte>(buffer, 0, bytesRead), token);
 
             totalBytesSent += bytesRead;
@@ -451,6 +450,7 @@ public abstract class QuicPeer
             // after we read it.
             var buffer = ArrayPool<byte>.Shared.Rent(fileChunkSize);
             var bytesRead = await fileStream.ReadAsync(buffer.AsMemory(0, fileChunkSize), token);
+            lastKeepAliveReceived = DateTime.UtcNow;
             if (bytesRead == 0)
             {
                 ArrayPool<byte>.Shared.Return(buffer);
