@@ -18,6 +18,7 @@ public class Server: QuicPeer
         var serverConnectionOptions = new QuicServerConnectionOptions
         {
             IdleTimeout = TimeSpan.FromSeconds(15),
+            KeepAliveInterval = TimeSpan.FromSeconds(2),
             DefaultStreamErrorCode = 0x0A,
             DefaultCloseErrorCode = 0x0B,
             ServerAuthenticationOptions = new SslServerAuthenticationOptions
@@ -25,7 +26,7 @@ public class Server: QuicPeer
                 ApplicationProtocols = [new SslApplicationProtocol("fileShare")],
                 ServerCertificate = cert,
                 ClientCertificateRequired = true,
-                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                RemoteCertificateValidationCallback = (_, certificate, _, _) =>
                 {
                     if (certificate is X509Certificate2 clientCert)
                     {
@@ -61,7 +62,7 @@ public class Server: QuicPeer
             ClientConnected.SetResult();
             Console.WriteLine($"Accepted connection from {connection.RemoteEndPoint}");
             _ = Task.Run(HandleStreamsAsync, token);
-            _ = Task.Run(PingLoopAsync, token);
+            //_ = Task.Run(PingLoopAsync, token);
             _ = Task.Run(TimeoutCheckLoopAsync, token);
         }
         catch (OperationCanceledException)

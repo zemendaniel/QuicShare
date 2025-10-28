@@ -86,6 +86,11 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task JoinRoom()
     {
+        if (string.IsNullOrWhiteSpace(RoomCode))
+        {
+            LobbyText = "Please enter a room code.";
+            return;
+        }
         peer = new Client(); 
         SetPeerHandlers();
         var client = (peer as Client)!;

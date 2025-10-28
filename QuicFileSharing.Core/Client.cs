@@ -16,6 +16,7 @@ public class Client : QuicPeer
             RemoteEndPoint = new IPEndPoint(remoteAddress, remotePort),
             LocalEndPoint = new IPEndPoint(isIpv6 ? IPAddress.IPv6Any : IPAddress.Any, localPort ?? 0),
             IdleTimeout = TimeSpan.FromSeconds(15),
+            KeepAliveInterval = TimeSpan.FromSeconds(2),
             DefaultStreamErrorCode = 0x0A,
             DefaultCloseErrorCode = 0x0B,
             ClientAuthenticationOptions = new SslClientAuthenticationOptions
@@ -25,7 +26,7 @@ public class Client : QuicPeer
                 
                 ClientCertificates = new X509CertificateCollection {cert},
                 
-                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+                RemoteCertificateValidationCallback = (_, certificate, _, _) =>
                 {
                     if (certificate is X509Certificate2 serverCert)
                     {
@@ -58,7 +59,7 @@ public class Client : QuicPeer
 
         GotConnected = true;
         
-        _ = Task.Run(PingLoopAsync, token);
+        //_ = Task.Run(PingLoopAsync, token);
         _ = Task.Run(TimeoutCheckLoopAsync, token);
 
         

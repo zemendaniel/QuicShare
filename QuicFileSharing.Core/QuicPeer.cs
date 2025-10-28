@@ -542,27 +542,21 @@ public abstract class QuicPeer
     }
 
     public abstract Task StopAsync();
-
-    protected async Task PingLoopAsync()
-    {
-        while (!token.IsCancellationRequested)
-        {
-            await Task.Delay(pingInterval, token);
-            await QueueControlMessage("PING");
-        }
-    }
-
+    
     protected async Task TimeoutCheckLoopAsync()
     {
         while (!token.IsCancellationRequested)
         {
             await Task.Delay(pingInterval, token);
-            if (DateTime.UtcNow - lastKeepAliveReceived > connectionTimeout)
+            try
             {
-                Console.WriteLine("[ERROR] Connection timed out.");
+                await controlStream!.WriteAsync(Array.Empty<byte>(), token);
+            }
+            catch (QuicException ex) when (
+                ex.Message.Contains("timed out from inactivity", StringComparison.OrdinalIgnoreCase))
+            {
                 OnDisconnected?.Invoke();
-                await StopAsync();
-                break;
+                return;
             }
         }
     }
