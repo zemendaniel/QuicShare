@@ -109,7 +109,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             var (success, errorMessage) =
-                await Task.Run(() => signaling.ConnectAsync(Role.Client, RoomCode.Trim().ToLower()), cts.Token);
+                await Task.Run(() => signaling.ConnectAsync(Role.Client, RoomCode.Trim().ToUpper()), cts.Token);
             if (success is not true)
             {
                 State = AppState.Lobby;
