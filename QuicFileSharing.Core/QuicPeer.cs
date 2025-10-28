@@ -5,6 +5,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 
 namespace QuicFileSharing.Core;
@@ -35,7 +36,6 @@ public class ProgressInfo
     public TimeSpan? TotalTime { get; set; }
 }
 
-
 public abstract class QuicPeer
 {
     protected readonly X509Certificate2 cert = CreateSelfSignedCertificate();
@@ -52,9 +52,8 @@ public abstract class QuicPeer
     private string? saveFolder; // receiver
     private string? filePath; // sender
     private Dictionary<string, string>? metadata; // receiver
-    private string? joinedFilePath; // receiver
 
-    public string? JoinedFilePath => joinedFilePath;
+    public string? JoinedFilePath { get; private set; }
 
     private Channel<string> controlSendQueue = Channel.CreateUnbounded<string>();
 
@@ -66,10 +65,9 @@ public abstract class QuicPeer
     private TaskCompletionSource<string>? fileHashReady;
     private bool controlReady;
     private bool fileReady;
-    private bool isTransferInProgress;
-    
-    public bool IsTransferInProgress => isTransferInProgress;
-    
+
+    public bool IsTransferInProgress { get; private set; }
+
     protected static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(30); 
     private static readonly TimeSpan timeoutCheckInterval = TimeSpan.FromSeconds(2);
     protected static readonly TimeSpan keepAliveInterval = TimeSpan.FromSeconds(2);
@@ -183,11 +181,11 @@ public abstract class QuicPeer
         // Console.WriteLine("Resetting after file transfer completed.");
         IsSending = false;
         metadata = null;
-        joinedFilePath = null;
+        JoinedFilePath = null;
         fileHashReady = null;
         filePath = null;
         saveFolder = null;
-        isTransferInProgress = false;
+        IsTransferInProgress = false;
         OnTransferStateChanged?.Invoke();
     }
     
@@ -223,12 +221,12 @@ public abstract class QuicPeer
                 break;
             
             case var _ when line.StartsWith("METADATA:"):   // Receiver gets this, marks the start of file transfer
-                if (isTransferInProgress)
+                if (IsTransferInProgress)
                 {
                     await QueueControlMessage("REJECTED:ALREADY_RECEIVING");
                     return;
                 }
-                isTransferInProgress = true;
+                IsTransferInProgress = true;
                 OnTransferStateChanged?.Invoke();
 
                 if (IsSending)
@@ -258,7 +256,7 @@ public abstract class QuicPeer
                
                 if (saveFolder == null)
                     throw new InvalidOperationException("Save folder not initialized.");
-                joinedFilePath = Path.Combine(saveFolder, metadata["FileName"]);
+                JoinedFilePath = Path.Combine(saveFolder, metadata["FileName"]);
                 fileHashReady = new TaskCompletionSource<string>(
                     TaskCreationOptions.RunContinuationsAsynchronously);
                 await QueueControlMessage("READY");
@@ -323,12 +321,12 @@ public abstract class QuicPeer
             throw new InvalidOperationException("File path not set.");
         if (fileStream == null)
             throw new InvalidOperationException("File stream not initialized.");
-        if (isTransferInProgress)
+        if (IsTransferInProgress)
         {
             return;
         }
         
-        isTransferInProgress = true;
+        IsTransferInProgress = true;
         OnTransferStateChanged?.Invoke();
 
         var hashQueue = Channel.CreateBounded<ArraySegment<byte>>(new BoundedChannelOptions(128)
@@ -411,7 +409,7 @@ public abstract class QuicPeer
         if (fileStream == null)
             throw new InvalidOperationException("File stream not initialized.");
 
-        if (joinedFilePath == null)
+        if (JoinedFilePath == null)
             throw new InvalidOperationException("Joined file path not initialized.");
 
         long totalBytesReceived = 0;
@@ -426,7 +424,7 @@ public abstract class QuicPeer
             .Unwrap();
 
         await using var outputFile = new FileStream(
-            joinedFilePath,
+            JoinedFilePath,
             FileMode.Create,
             FileAccess.Write,
             FileShare.None,

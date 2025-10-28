@@ -1,10 +1,10 @@
 a lot of testing!!!!
 
 proper ui
-ditch word based codes
 ui notifications in receiving too
 if quic is not supported notify user on join and create room.
 fileofferwindow specify path first
+check avg speed after every 10 packets
 
 
 pause, resume later, cancel
