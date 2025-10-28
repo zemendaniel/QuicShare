@@ -1,25 +1,18 @@
 ﻿using System;
-using System.IO;
 using System.Net.Quic;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Media;
 using Avalonia.Platform.Storage;
-using Avalonia.Rendering;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.VisualBasic.CompilerServices;
 using QuicFileSharing.Core;
 using QuicFileSharing.GUI.Models;
-using Avalonia.Styling;
 using QuicFileSharing.GUI.Utils;
 using QuicFileSharing.GUI.Views;
 
@@ -60,7 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool isTransferInProgress;
     
     private AppConfig appConfig;
-    
+    private CancellationTokenSource cts;
     private int PortV4 => appConfig.PortV4;
 
     // [ObservableProperty] 
@@ -98,11 +91,11 @@ public partial class MainWindowViewModel : ViewModelBase
         using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
         await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
         
-        var cts = new CancellationTokenSource();
+        cts = new CancellationTokenSource();
 
         signaling.OnDisconnected += async (_, description) =>
         {
-            if (client.GotConnected) return;
+            if (client.GotConnectedToPeer.Task.IsCompleted) return;
             if (cts.Token.IsCancellationRequested) return;
             await cts.CancelAsync();
             RoomCode = string.Empty;
@@ -177,6 +170,17 @@ public partial class MainWindowViewModel : ViewModelBase
                 LobbyText = "Could not connect to peer: " + ex.Message;
                 return;
             }
+            
+            try
+            {
+                var isCertValid = await client.GotConnectedToPeer.Task.WaitAsync(cts.Token);
+                if (!isCertValid)
+                    return;
+            }
+            catch (TaskCanceledException)
+            {
+                // ignored
+            }
 
             ProgressPercentage = 0;
             ProgressText = "";
@@ -197,13 +201,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         LobbyText = "Connecting to coordination server...";
         var server = (peer as Server)!;
-        var cts = new CancellationTokenSource();
+        cts = new CancellationTokenSource();
         using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
         await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
         
         signaling.OnDisconnected += async (_, description) =>
         {
-            if (server.ClientConnected.Task.IsCompleted) return;
+            if (server.GotConnectedToPeer.Task.IsCompleted) return;
             if (cts.Token.IsCancellationRequested) return;
             await cts.CancelAsync();
             RoomCode = string.Empty;
@@ -252,7 +256,17 @@ public partial class MainWindowViewModel : ViewModelBase
             LobbyText = $"Could not connect to coordination server: {ex.Message}";
         }
 
-        await server.ClientConnected.Task;
+        try
+        {
+            var isCertValid = await server.GotConnectedToPeer.Task.WaitAsync(cts.Token);
+            if (!isCertValid)
+                return;
+        }
+        catch (TaskCanceledException)
+        {
+            // ignored
+        }
+        
         ProgressPercentage = 0;
         ProgressText = "";
         State = AppState.InRoom;
@@ -294,9 +308,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void SetPeerHandlers()
     {
-        peer.OnDisconnected += () =>
+        peer.OnDisconnected += async msg =>
         {
-            LobbyText = "Connection Error: You got disconnected from your peer.";
+            await cts.CancelAsync();
+            LobbyText = $"Connection Error: {msg}";
             RoomCode = "";
             State = AppState.Lobby;
             IsTransferInProgress = false;
@@ -317,10 +332,6 @@ public partial class MainWindowViewModel : ViewModelBase
                         TrackProgress();
                 }
             });
-        };
-        peer.OnFileRejected += msg =>
-        {
-            RoomText = msg;
         };
         peer.OnTransferStateChanged += () =>
         {
@@ -416,21 +427,21 @@ public partial class MainWindowViewModel : ViewModelBase
             !StaticUtils.IsValidWebSocketUri(SignalingServerText))
         {
             SettingsText = "Invalid signaling server URL. " +
-                           "Make sure it starts with ws:// or wss:// and that the domain, host and path are correct.";
+                           "Make sure it starts with ws:// or wss:// and that the host and port are correct.";
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(ApiV6Text) && !StaticUtils.IsValidHttpUrl(ApiV6Text))
         {
             SettingsText = "Invalid API URL for IPv6. " +
-                           "Make sure it starts with http:// or https:// and that the domain, host, port and path are correct.";
+                           "Make sure it starts with http:// or https:// and that the host, port and path are correct.";
             return;
         }
 
         if (!string.IsNullOrWhiteSpace(ApiV4Text) && !StaticUtils.IsValidHttpUrl(ApiV4Text))
         {
             SettingsText = "Invalid API URL for IPv4. " +
-                           "Make sure it starts with http:// or https:// and that the domain, host, port and path are correct.";
+                           "Make sure it starts with http:// or https:// and that the host, port and path are correct.";
             return;
         }
 

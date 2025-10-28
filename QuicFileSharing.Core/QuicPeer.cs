@@ -9,7 +9,6 @@ using System.Threading.Channels;
 
 namespace QuicFileSharing.Core;
 
-// public delegate Task<(bool, Uri?)> OnFileOffered(string filePath, long fileSize);
 
 public enum FileTransferStatus
 {
@@ -37,8 +36,6 @@ public class ProgressInfo
 }
 
 
-
-
 public abstract class QuicPeer
 {
     protected readonly X509Certificate2 cert = CreateSelfSignedCertificate();
@@ -48,7 +45,8 @@ public abstract class QuicPeer
     protected QuicStream? controlStream;
     protected QuicStream? fileStream;
     protected CancellationTokenSource? cts;
-    
+    public TaskCompletionSource<bool> GotConnectedToPeer { get; } = new();
+
     public bool IsSending { get; set; }
     protected CancellationToken token = CancellationToken.None;
     private string? saveFolder; // receiver
@@ -72,14 +70,13 @@ public abstract class QuicPeer
     
     public bool IsTransferInProgress => isTransferInProgress;
     
-    private DateTime? lastKeepAliveReceived;
-    private static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(16); // adjust if needed
-    private static readonly TimeSpan pingInterval = TimeSpan.FromSeconds(2); // adjust if needed
+    protected static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(30); 
+    private static readonly TimeSpan timeoutCheckInterval = TimeSpan.FromSeconds(2);
+    protected static readonly TimeSpan keepAliveInterval = TimeSpan.FromSeconds(2);
     private static readonly int fileChunkSize = 1024 * 1024;
     private static readonly int fileBufferSize = 16 * 1014 * 1024;
     
-    public event Action? OnDisconnected;
-    public event Action<string>? OnFileRejected;
+    public event Action<string>? OnDisconnected;
     public event Action<string, long>? OnFileOffered;
     public event Action? OnTransferStateChanged;
     public IProgress<ProgressInfo>? FileTransferProgress { get; set; }
@@ -111,6 +108,8 @@ public abstract class QuicPeer
             bothStreamsReady.TrySetResult();
         }
     }
+    
+    protected void CallOnDisconnected(string reason) => OnDisconnected?.Invoke(reason);
 
     protected async Task ControlLoopAsync()
     {
@@ -181,7 +180,7 @@ public abstract class QuicPeer
 
     private void ResetAfterFileTransferCompleted()
     {
-        Console.WriteLine("Resetting after file transfer completed.");
+        // Console.WriteLine("Resetting after file transfer completed.");
         IsSending = false;
         metadata = null;
         joinedFilePath = null;
@@ -195,16 +194,13 @@ public abstract class QuicPeer
     private async Task 
         HandleControlMessage(string? line)
     {
-        Console.WriteLine(line);
+        // Console.WriteLine(line);
         switch (line)
         {
             case null:
                 break;
-            case "PING": // Both sides get this
-                lastKeepAliveReceived = DateTime.UtcNow;
-                break;
             case "READY": // Receiver gets this
-                Console.WriteLine("Receiver is ready, starting file send...");
+                // Console.WriteLine("Receiver is ready, starting file send...");
                 _ = Task.Run(SendFileAsync, token);
                 break;
             case var _ when line.StartsWith("RECEIVED_FILE:"): // Sender gets this, marks the end of file transfer
@@ -212,15 +208,15 @@ public abstract class QuicPeer
                 switch (status)
                 {
                     case "OK":
-                        Console.WriteLine("Receiver confirmed file was received successfully.");
+                        // Console.WriteLine("Receiver confirmed file was received successfully.");
                         FileTransferCompleted?.SetResult(FileTransferStatus.Completed);
                         break;
                     case "FAILED":
-                        Console.WriteLine("Receiver did not receive the file successfully (integrity check failed).");
+                        // Console.WriteLine("Receiver did not receive the file successfully (integrity check failed).");
                         FileTransferCompleted?.SetResult(FileTransferStatus.HashFailed);
                         break;
                     default:
-                        Console.WriteLine($"Unknown status: {status}");
+                        // Console.WriteLine($"Unknown status: {status}");
                         break;
                 }
                 ResetAfterFileTransferCompleted();
@@ -245,7 +241,7 @@ public abstract class QuicPeer
                 
                 var json = line["METADATA:".Length..];
                 metadata = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(json)!;
-                Console.WriteLine($"Received metadata: {string.Join(", ", metadata)}");
+                // Console.WriteLine($"Received metadata: {string.Join(", ", metadata)}");
                 
                 FileOfferDecisionTsc = new(TaskCreationOptions.RunContinuationsAsynchronously);
                 OnFileOffered?.Invoke(metadata["FileName"], long.Parse(metadata["FileSize"]));
@@ -270,7 +266,7 @@ public abstract class QuicPeer
                 
                 break;
             case var _ when line.StartsWith("FILE_SENT:"): // Receiver gets this
-                Console.WriteLine("Sender confirmed file was sent.");
+                // Console.WriteLine("Sender confirmed file was sent.");
                 if (fileHashReady == null)
                     throw new InvalidOperationException("File hash ready not initialized.");
                 var hash = line["FILE_SENT:".Length..];
@@ -305,9 +301,9 @@ public abstract class QuicPeer
         FileTransferCompleted = new();
         await WaitForStreamsAsync();
         if (filePath == null)
-            throw new InvalidOperationException("InitSend must be called first.");
+            throw new InvalidOperationException("File path not set.");
         if (!IsSending)
-            throw new InvalidOperationException("InitSend cannot be called on a receiver.");
+            throw new InvalidOperationException("Not in sending mode.");
 
         var fileInfo = new FileInfo(filePath);
         var fileName = Path.GetFileName(filePath);
@@ -324,7 +320,7 @@ public abstract class QuicPeer
     private async Task SendFileAsync()
     {
         if (filePath == null)
-            throw new InvalidOperationException("InitSend must be called first.");
+            throw new InvalidOperationException("File path not set.");
         if (fileStream == null)
             throw new InvalidOperationException("File stream not initialized.");
         if (isTransferInProgress)
@@ -446,7 +442,6 @@ public abstract class QuicPeer
         {
             var buffer = ArrayPool<byte>.Shared.Rent(fileChunkSize);
             var bytesRead = await fileStream.ReadAsync(buffer.AsMemory(0, fileChunkSize), token);
-            lastKeepAliveReceived = DateTime.UtcNow;
             if (bytesRead == 0)
             {
                 ArrayPool<byte>.Shared.Return(buffer);
@@ -483,40 +478,27 @@ public abstract class QuicPeer
         });
 
         var actualFileHash = await hashTask;
-        Console.WriteLine($"SHA256: {actualFileHash}");
+        // Console.WriteLine($"SHA256: {actualFileHash}");
 
         stopwatch.Stop();
         await outputFile.FlushAsync(token);
 
         var expectedFileHash = await fileHashReady!.Task;
         var success = actualFileHash == expectedFileHash;
-        try
+        
+        if (!success)
         {
-            Console.WriteLine("task completed:");
-            Console.WriteLine(FileTransferCompleted.Task.IsCompleted);
-            if (!success)
-            {
-                Console.WriteLine("[ERROR] File integrity check failed.");
-                await QueueControlMessage("RECEIVED_FILE:FAILED");
-                FileTransferCompleted!.SetResult(FileTransferStatus.HashFailed);
-            }
-            else
-            {
-                Console.WriteLine("[SUCCESS] File received successfully.");
-                await QueueControlMessage("RECEIVED_FILE:OK");
-                FileTransferCompleted!.SetResult(FileTransferStatus.Completed);
-                Console.WriteLine("asd");
-            }
+            // Console.WriteLine("[ERROR] File integrity check failed.");
+            await QueueControlMessage("RECEIVED_FILE:FAILED");
+            FileTransferCompleted!.SetResult(FileTransferStatus.HashFailed);
         }
-        catch (Exception e)
+        else
         {
-            Console.WriteLine(e.Message);
+            // Console.WriteLine("[SUCCESS] File received successfully.");
+            await QueueControlMessage("RECEIVED_FILE:OK");
+            FileTransferCompleted!.SetResult(FileTransferStatus.Completed);
         }
-
-
-        Console.WriteLine($"File was saved as {joinedFilePath}, size = {totalBytesReceived} bytes");
-        Console.WriteLine(
-            $"Average speed was {totalBytesReceived / (1024 * 1024) / stopwatch.Elapsed.TotalSeconds:F2} MB/s, time {stopwatch.Elapsed}");
+        
         ResetAfterFileTransferCompleted();
     }
 
@@ -528,7 +510,6 @@ public abstract class QuicPeer
 
     private async Task<string> ComputeHashAsync(Channel<ArraySegment<byte>> hashQueue)
     {
-        Console.WriteLine("Calculating hash...");
         using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
         await foreach (var segment in hashQueue.Reader.ReadAllAsync(token))
@@ -547,7 +528,7 @@ public abstract class QuicPeer
     {
         while (!token.IsCancellationRequested)
         {
-            await Task.Delay(pingInterval, token);
+            await Task.Delay(timeoutCheckInterval, token);
             try
             {
                 await controlStream!.WriteAsync(Array.Empty<byte>(), token);
@@ -555,7 +536,8 @@ public abstract class QuicPeer
             catch (QuicException ex) when (
                 ex.Message.Contains("timed out from inactivity", StringComparison.OrdinalIgnoreCase))
             {
-                OnDisconnected?.Invoke();
+                CallOnDisconnected("You got disconnected from your peer.");
+                await StopAsync();
                 return;
             }
         }

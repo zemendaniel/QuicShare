@@ -1,22 +1,21 @@
 using System.Net;
 using System.Net.Quic;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 namespace QuicFileSharing.Core;
 
 public class Client : QuicPeer
 {
-    public bool GotConnected { get; private set;}
-
     public async Task StartAsync(IPAddress remoteAddress, int remotePort, bool isIpv6, string expectedThumbprint, int? localPort = null)
     {
         var clientConnectionOptions = new QuicClientConnectionOptions
         {
             RemoteEndPoint = new IPEndPoint(remoteAddress, remotePort),
             LocalEndPoint = new IPEndPoint(isIpv6 ? IPAddress.IPv6Any : IPAddress.Any, localPort ?? 0),
-            IdleTimeout = TimeSpan.FromSeconds(15),
-            KeepAliveInterval = TimeSpan.FromSeconds(2),
+            IdleTimeout = connectionTimeout,
+            KeepAliveInterval = keepAliveInterval,
             DefaultStreamErrorCode = 0x0A,
             DefaultCloseErrorCode = 0x0B,
             ClientAuthenticationOptions = new SslClientAuthenticationOptions
@@ -42,7 +41,17 @@ public class Client : QuicPeer
                 }
             }
         };
-        connection = await QuicConnection.ConnectAsync(clientConnectionOptions);
+        try
+        {
+            connection = await QuicConnection.ConnectAsync(clientConnectionOptions);
+        }
+        catch (AuthenticationException)
+        {
+            GotConnectedToPeer.SetResult(false);
+            CallOnDisconnected("Your peer has provided an invalid certificate.");
+            await StopAsync();
+            return; 
+        }
         Console.WriteLine($"Connected to {connection.RemoteEndPoint}");
         
         cts = new CancellationTokenSource();
@@ -57,12 +66,9 @@ public class Client : QuicPeer
         await fileStream.WriteAsync(new byte[] { 0x02 }, token); 
         SetFileStream();
 
-        GotConnected = true;
+        GotConnectedToPeer.SetResult(true);
         
-        //_ = Task.Run(PingLoopAsync, token);
         _ = Task.Run(TimeoutCheckLoopAsync, token);
-
-        
     }
     
     public override async Task StopAsync()

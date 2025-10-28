@@ -15,7 +15,6 @@ public class WebSocketSignaling: IAsyncDisposable
     private readonly string baseUri;
     private readonly CancellationTokenSource cts = new();
     private readonly ClientWebSocket ws;
-    public event Action<string>? OnMessageReceived;
     public event Action<string?, string?>? OnDisconnected;
     public TaskCompletionSource<string> OfferTcs { get; } = new();
     public TaskCompletionSource<string> AnswerTsc { get; } = new();
@@ -50,17 +49,17 @@ public class WebSocketSignaling: IAsyncDisposable
         }
         catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.ConnectionClosedPrematurely)
         {
-            Console.WriteLine("WebSocket closed prematurely: " + ex.Message);
+            // Console.WriteLine("WebSocket closed prematurely: " + ex.Message);
             return (false, ex.Message);
         }
         catch (WebSocketException ex)
         {
-            Console.WriteLine($"WebSocket error: {ex.WebSocketErrorCode} - {ex.Message}");
+            // Console.WriteLine($"WebSocket error: {ex.WebSocketErrorCode} - {ex.Message}");
             return (false, ex.Message);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Unexpected exception while connecting: {ex}");
+            // Console.WriteLine($"Unexpected exception while connecting: {ex}");
             return (false, ex.Message);
         }
     }
@@ -77,7 +76,7 @@ public class WebSocketSignaling: IAsyncDisposable
             try
             {
                 var result = await ws.ReceiveAsync(buffer, cts.Token);
-                Console.WriteLine($"Received frame: type={result.MessageType}, count={result.Count}");
+                // Console.WriteLine($"Received frame: type={result.MessageType}, count={result.Count}");
 
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
@@ -108,7 +107,6 @@ public class WebSocketSignaling: IAsyncDisposable
         try
         {
             if (string.IsNullOrWhiteSpace(message)) return;
-            // OnMessageReceived?.Invoke(message);
             var msg = JsonSerializer.Deserialize<SignalingMessage>(message, SignalingUtils.Options);
             if (msg == null) return;
             switch (msg.Type)
@@ -146,7 +144,7 @@ public class WebSocketSignaling: IAsyncDisposable
 
         var bytes = Encoding.UTF8.GetBytes(json);
         await ws.SendAsync(bytes, WebSocketMessageType.Text, true, cts.Token);
-        Console.WriteLine($"[OUT] {message}");
+        // Console.WriteLine($"[OUT] {message}");
     }
 
     public async Task CloseAsync()
@@ -166,7 +164,7 @@ public class WebSocketSignaling: IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await CloseAsync();
-        Console.WriteLine("WebSocket closed.");
+        // Console.WriteLine("WebSocket closed.");
     }
 }
 

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Quic;
 using System.Net.Security;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 namespace QuicFileSharing.Core;
@@ -8,17 +9,14 @@ namespace QuicFileSharing.Core;
 public class Server: QuicPeer
 {
     private QuicListener? listener;
-    public TaskCompletionSource ClientConnected { get; } = new();
-    public event Action? ClientDisconnected;
-    public bool IsClientConnected { get; private set; }
     
     public async Task StartAsync(bool isIpv6, int localPort, string expectedThumbprint)
     {
         var listenEndpoint = new IPEndPoint(isIpv6 ? IPAddress.IPv6Any : IPAddress.Any, localPort);
         var serverConnectionOptions = new QuicServerConnectionOptions
         {
-            IdleTimeout = TimeSpan.FromSeconds(15),
-            KeepAliveInterval = TimeSpan.FromSeconds(2),
+            IdleTimeout = connectionTimeout,
+            KeepAliveInterval = keepAliveInterval,
             DefaultStreamErrorCode = 0x0A,
             DefaultCloseErrorCode = 0x0B,
             ServerAuthenticationOptions = new SslServerAuthenticationOptions
@@ -30,9 +28,7 @@ public class Server: QuicPeer
                 {
                     if (certificate is X509Certificate2 clientCert)
                     {
-                        Console.WriteLine("Server expected print: " + expectedThumbprint);
-                        Console.WriteLine("Server thumbprint: " + clientCert.Thumbprint);
-                        return clientCert.Thumbprint.Equals(expectedThumbprint, StringComparison.OrdinalIgnoreCase);
+                        return clientCert.Thumbprint.Equals(expectedThumbprint, StringComparison.OrdinalIgnoreCase); 
                     }
                     return false;
                 }
@@ -54,20 +50,30 @@ public class Server: QuicPeer
     }
     private async Task AcceptConnection()
     {
-        if (listener == null)
-            throw new InvalidOperationException("Listener not initialized.");
         try
         {
-            connection = await listener.AcceptConnectionAsync(token);
-            ClientConnected.SetResult();
+            if (listener == null)
+                throw new InvalidOperationException("Listener not initialized.");
+            try
+            {
+                connection = await listener.AcceptConnectionAsync(token);
+            }
+            catch (AuthenticationException)
+            {
+                GotConnectedToPeer.SetResult(false);
+                CallOnDisconnected("Your peer has provided an invalid certificate.");
+                await StopAsync();
+                return;
+            }
+
+            GotConnectedToPeer.SetResult(true);
             Console.WriteLine($"Accepted connection from {connection.RemoteEndPoint}");
             _ = Task.Run(HandleStreamsAsync, token);
-            //_ = Task.Run(PingLoopAsync, token);
             _ = Task.Run(TimeoutCheckLoopAsync, token);
         }
         catch (OperationCanceledException)
         {
-
+            // ignored
         }
     }
 
