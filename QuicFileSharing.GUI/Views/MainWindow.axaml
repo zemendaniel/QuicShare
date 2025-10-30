@@ -88,7 +88,7 @@
                 You are open to receiving files.
             </TextBlock>
             <TextBlock Text="{Binding RoomText}" TextAlignment="Center"></TextBlock>
-            <TextBlock Text="{Binding FilePath}" TextAlignment="Center"></TextBlock>
+            <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center"></SelectableTextBlock>
             <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400">
                 <ProgressBar Minimum="0" Maximum="100"
                              Value="{Binding ProgressPercentage}" Height="20"/>

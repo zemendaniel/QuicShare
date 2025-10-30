@@ -5,7 +5,6 @@ using System.Text;
 using System.Diagnostics;
 using System.Buffers;
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
 
 namespace QuicFileSharing.Core;
@@ -532,7 +531,7 @@ public abstract class QuicPeer
                 await controlStream!.WriteAsync(Array.Empty<byte>(), token);
             }
             catch (QuicException ex) when (
-                ex.Message.Contains("timed out from inactivity", StringComparison.OrdinalIgnoreCase))
+                ex.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase)) 
             {
                 CallOnDisconnected("You got disconnected from your peer.");
                 await StopAsync();

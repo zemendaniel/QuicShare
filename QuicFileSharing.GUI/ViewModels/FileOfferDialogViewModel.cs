@@ -1,9 +1,9 @@
 ﻿using System.Runtime.InteropServices;
-using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Controls;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 
@@ -13,33 +13,54 @@ public partial class FileOfferDialogViewModel : ViewModelBase
 {
     [ObservableProperty]
     private string message = string.Empty;
+    [ObservableProperty]
+    private string savePath = string.Empty;
+    [ObservableProperty]
+    private string errorText = string.Empty;
 
-    private TaskCompletionSource<(bool accepted, string? path)> tcs = new();
+    private readonly TaskCompletionSource<(bool accepted, string? path)> tcs = new();
 
     public Task<(bool accepted, string? path)> ResultTask => tcs.Task;
 
-    public FileOfferDialogViewModel(string fileName, long fileSize)
+    public FileOfferDialogViewModel(string fileName, long fileSize, string savePath)
     {
         Message = $"Incoming file: {fileName} ({FormatBytes(fileSize)})";
+        SavePath = savePath;
     }
-
     [RelayCommand]
-    private async Task Accept(Window window)
+    private async Task SelectFolder(Window window)
     {
+        IStorageFolder? startLocation = null;
+        if (!string.IsNullOrWhiteSpace(SavePath) &&
+            Directory.Exists(SavePath))
+        {
+            startLocation = await window.StorageProvider.TryGetFolderFromPathAsync(SavePath);
+        }
         var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
-            Title = "Select folder to save the file"
+            Title = "Select folder to save the file",
+            SuggestedStartLocation = startLocation
         });
 
         if (folders.Count == 0)
+            return;
+        
+        var folderPath = ResolveFolderPath(folders[0]);
+        // todo validate permissions
+        if (folderPath is null)
         {
-            tcs.SetResult((false, null));
+            ErrorText = "Permission was denied for the selected folder. Default path will be used.";
+            SavePath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments); // todo change
             return;
         }
         
-        var folderPath = ResolveFolderPath(folders[0]);
-        tcs.SetResult((true, folderPath));
-        
+        SavePath = folderPath;
+    }
+
+    [RelayCommand]
+    private void Accept()
+    {
+        tcs.SetResult((true, SavePath));
     }
 
     [RelayCommand]
@@ -48,10 +69,10 @@ public partial class FileOfferDialogViewModel : ViewModelBase
         tcs.SetResult((false, null));
     }
     
-    private static string ResolveFolderPath(IStorageFolder folder)
+    private static string? ResolveFolderPath(IStorageFolder folder)
     {
         if (folder.Path is not { IsAbsoluteUri: true, Scheme: "file" })
-            return Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            return null;
         
         var path = Uri.UnescapeDataString(folder.Path.LocalPath);
 

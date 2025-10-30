@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net.Quic;
 using System.Net.Sockets;
 using System.Text;
@@ -295,10 +296,19 @@ public partial class MainWindowViewModel : ViewModelBase
         peer.IsSending = true;
         RoomText = "";
         TrackProgress();
+        
+        IStorageFolder? startLocation = null;
+        if (!string.IsNullOrWhiteSpace(appConfig.SenderPath) &&
+            Directory.Exists(appConfig.SenderPath))
+        {
+            startLocation = await window.StorageProvider.TryGetFolderFromPathAsync(appConfig.SenderPath);
+        }
+        // todo validate permissions
         var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Select file to send",
-            AllowMultiple = false
+            AllowMultiple = false,
+            SuggestedStartLocation = startLocation 
         });
 
         if (files.Count == 0)
@@ -315,8 +325,14 @@ public partial class MainWindowViewModel : ViewModelBase
             RoomText = "Error: Could not determine file path.";
             return;       
         }
+        var selectedDir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(selectedDir))
+        {
+            appConfig.SenderPath = selectedDir;
+            DataStore.Save(appConfig);
+        }
         peer.SetSendPath(path);
-        FilePath = $"File is located at: {path}";
+        FilePath = $"Selected file: {path}";
         await peer.StartSending();
         RoomText = "Waiting for peer to accept file...";
         var status = await peer.FileTransferCompleted!.Task;
@@ -336,21 +352,26 @@ public partial class MainWindowViewModel : ViewModelBase
         };
         peer.OnFileOffered += async (fileName, fileSize) =>
         {
+            (bool accepted, string? path) result = default;
             await Dispatcher.UIThread.InvokeAsync( async () =>
             {
                 var dialog = new FileOfferDialog
                 {
-                    DataContext = new FileOfferDialogViewModel(fileName, fileSize)
+                    DataContext = new FileOfferDialogViewModel(fileName, fileSize, appConfig.ReceiverPath)
                 };
                 if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
-                    var result = await dialog.ShowDialog<(bool accepted, string? path)>(desktop.MainWindow!);
+                    result = await dialog.ShowDialog<(bool accepted, string? path)>(desktop.MainWindow!);
                     peer.FileOfferDecisionTsc.SetResult(result);
                     if (result.accepted)
                         TrackProgress();
                 }
             });
-            FilePath = $"File is located at {peer.JoinedFilePath ?? "Unknown file path"}";
+            if (!result.accepted)
+                return;
+            appConfig.ReceiverPath = result.path ?? string.Empty;
+            DataStore.Save(appConfig);
+            FilePath = $"File is located at: {peer.JoinedFilePath ?? "Unknown file path"}";
             var status = await peer.FileTransferCompleted!.Task;
             HandleFileTransferCompleted(status);
         };

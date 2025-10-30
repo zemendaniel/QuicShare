@@ -11,9 +11,18 @@
     <StackPanel Spacing="12" Margin="20">
         <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontWeight="Bold" Margin="0, 0, 0, 16"/>
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-            <Button Content="Reject" Command="{Binding RejectCommand}"/>
-            <Button Content="Accept" Command="{Binding AcceptCommand}" 
+            <TextBlock>Save Folder:</TextBlock>
+            <Border BorderBrush="White" BorderThickness="1">
+                <SelectableTextBlock Padding="6" 
+                                     Text="{Binding SavePath}" TextAlignment="Center" VerticalAlignment="Center"></SelectableTextBlock>
+            </Border>
+            <Button Content="Browse..." Command="{Binding SelectFolderCommand}"
                     CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
         </StackPanel>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+            <Button Content="Reject" Command="{Binding RejectCommand}"/>
+            <Button Content="Accept" Command="{Binding AcceptCommand}"/>
+        </StackPanel>
+        <TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap"></TextBlock>
     </StackPanel>
 </Window>

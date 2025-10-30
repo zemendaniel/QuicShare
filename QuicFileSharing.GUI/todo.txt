@@ -1,8 +1,7 @@
 a lot of testing!!!!
 
 proper ui
-fileofferwindow specify path first
 check avg speed after every 10 packets
-
+validate permissions, disk space
 
 pause, resume later, cancel
