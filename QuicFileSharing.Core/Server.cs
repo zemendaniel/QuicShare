@@ -99,13 +99,13 @@ public class Server: QuicPeer
                         case 0x01:
                             controlStream = stream;  
                             _ = Task.Run(ControlLoopAsync, token);
-                            Console.WriteLine("Opened control stream");
+                            // Console.WriteLine("Opened control stream");
                             SetControlStream();
                             break;
 
                         case 0x02:
                             fileStream = stream;     
-                            Console.WriteLine("Opened file stream");
+                            // Console.WriteLine("Opened file stream");
                             SetFileStream();
                             break;
 
@@ -116,23 +116,22 @@ public class Server: QuicPeer
                 }
                 catch (OperationCanceledException)
                 {
-                    Console.WriteLine("Connection cancelled.");
                     break;
                 }
                 catch (QuicException ex) when (ex.InnerException == null || ex.Message.Contains("timed out"))
                 {
-                    Console.WriteLine("Connection timed out due to inactivity.");
+                    // Console.WriteLine("Connection timed out due to inactivity.");
                     await StopAsync();
                 } 
             }
         }
         catch (OperationCanceledException)
         {
-            Console.WriteLine("Connection cancelled.");
+            // Console.WriteLine("Connection cancelled.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Connection error: {ex}");
+            // Console.WriteLine($"Connection error: {ex}");
         }
     }
 

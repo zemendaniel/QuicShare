@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Quic;
 using System.Net.Sockets;
 using System.Text;
@@ -51,14 +52,13 @@ public partial class MainWindowViewModel : ViewModelBase
     private string settingsText = string.Empty;
     [ObservableProperty]
     private bool isTransferInProgress;
+    [ObservableProperty]
+    private string filePath;    
     
     private AppConfig appConfig;
     private CancellationTokenSource cts;
-    private int PortV4 => appConfig.PortV4;
 
-    // [ObservableProperty] 
-    // private bool isTransferring => peer.IsTransferInProgress; 
-
+    
     public MainWindowViewModel()
     {
         LoadConfig();
@@ -232,7 +232,7 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             answer = await Task.Run(() => 
-                signalingUtils.ConstructAnswerAsync(offer, server.Thumbprint, ForceIPv4, PortV4), cts.Token);
+                signalingUtils.ConstructAnswerAsync(offer, server.Thumbprint, ForceIPv4, appConfig.PortV4), cts.Token);
         }
         catch (InvalidOperationException ex)
         {
@@ -243,7 +243,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         signalingUtils.CloseUdpSocket();
-        await Task.Run(() => server.StartAsync(!ForceIPv4, signalingUtils.OwnPort ?? PortV4,
+        await Task.Run(() => server.StartAsync(!ForceIPv4, signalingUtils.OwnPort ?? appConfig.PortV4,
             signalingUtils.ClientThumbprint!), cts.Token);
         
         try
@@ -300,7 +300,9 @@ public partial class MainWindowViewModel : ViewModelBase
             return;       
         }
         peer.SetSendPath(path);
+        FilePath = $"File is located at: {path}";
         await peer.StartSending();
+        RoomText = "Waiting for peer to accept file...";
         var status = await peer.FileTransferCompleted!.Task;
         peer.IsSending = false;
         HandleFileTransferCompleted(status);
@@ -332,10 +334,15 @@ public partial class MainWindowViewModel : ViewModelBase
                         TrackProgress();
                 }
             });
+            FilePath = $"File is located at {peer.JoinedFilePath ?? "Unknown file path"}";
+            var status = await peer.FileTransferCompleted!.Task;
+            HandleFileTransferCompleted(status);
         };
         peer.OnTransferStateChanged += () =>
         {
             IsTransferInProgress = peer.IsTransferInProgress;
+            if (IsTransferInProgress)
+                RoomText = "";
         };
     }
 

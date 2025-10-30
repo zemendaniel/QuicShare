@@ -268,7 +268,7 @@ public abstract class QuicPeer
                 if (fileHashReady == null)
                     throw new InvalidOperationException("File hash ready not initialized.");
                 var hash = line["FILE_SENT:".Length..];
-                Console.WriteLine($"Received file hash: {hash}");
+                // Console.WriteLine($"Received file hash: {hash}");
                 fileHashReady.SetResult(hash);
                 break;
             case var _ when line.StartsWith("REJECTED:"): 
@@ -289,7 +289,7 @@ public abstract class QuicPeer
                 ResetAfterFileTransferCompleted();
                 break;
             default:
-                Console.WriteLine($"Unknown control message: {line}");
+                // Console.WriteLine($"Unknown control message: {line}");
                 break;
         }
     }
@@ -397,7 +397,7 @@ public abstract class QuicPeer
 
         
         var fileHash = await hashTask;
-        Console.WriteLine(fileHash);
+        // Console.WriteLine(fileHash);
         await QueueControlMessage($"FILE_SENT:{fileHash}");
     }
 
