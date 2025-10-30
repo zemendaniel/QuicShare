@@ -21,7 +21,7 @@ public class AppConfig
     private const string DefaultApiV6 = "https://ipv6.seeip.org";
     private const string DefaultApiV4 = "https://api.ipify.org";
     private const string DefaultSenderPath = "";
-    private static readonly string DefaultReceiverPath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    private static readonly string DefaultReceiverPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
     public AppConfig(
         int? portV4 = null,

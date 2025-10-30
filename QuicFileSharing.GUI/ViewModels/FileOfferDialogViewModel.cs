@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
+using QuicFileSharing.GUI.Utils;
 
 namespace QuicFileSharing.GUI.ViewModels;
 
@@ -30,6 +31,7 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     [RelayCommand]
     private async Task SelectFolder(Window window)
     {
+        ErrorText = string.Empty;
         IStorageFolder? startLocation = null;
         if (!string.IsNullOrWhiteSpace(SavePath) &&
             Directory.Exists(SavePath))
@@ -45,12 +47,12 @@ public partial class FileOfferDialogViewModel : ViewModelBase
         if (folders.Count == 0)
             return;
         
-        var folderPath = ResolveFolderPath(folders[0]);
+        var folderPath = FileUtils.ResolveFolderPath(folders[0]);
         // todo validate permissions
         if (folderPath is null)
         {
             ErrorText = "Permission was denied for the selected folder. Default path will be used.";
-            SavePath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments); // todo change
+            SavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop); 
             return;
         }
         
@@ -68,21 +70,4 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     {
         tcs.SetResult((false, null));
     }
-    
-    private static string? ResolveFolderPath(IStorageFolder folder)
-    {
-        if (folder.Path is not { IsAbsoluteUri: true, Scheme: "file" })
-            return null;
-        
-        var path = Uri.UnescapeDataString(folder.Path.LocalPath);
-
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return path;
-        
-        path = path.Replace('/', '\\');
-        if (folder.Path.Host != "")
-            path = $@"\\{folder.Path.Host}{path[1..]}";
-
-        return path;
-    }
-
 }
