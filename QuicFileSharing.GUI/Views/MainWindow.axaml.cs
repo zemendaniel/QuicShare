@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Threading.Tasks;
 using Avalonia.Controls;
+using QuicFileSharing.GUI.ViewModels;
 
 namespace QuicFileSharing.GUI.Views;
 
@@ -10,6 +11,12 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         LayoutUpdated += (s, e) => UpdateMinSize();
+
+        Opened += async (_, _) =>
+        {
+            if (DataContext is MainWindowViewModel vm)
+                await vm.CheckQuicSupportAsync(this);
+        };
 
     }
     private void UpdateMinSize()

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net;
 using System.Net.Quic;
 using System.Net.Sockets;
 using System.Text;
@@ -12,6 +11,8 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MsBox.Avalonia;
+using MsBox.Avalonia.Enums;
 using QuicFileSharing.Core;
 using QuicFileSharing.GUI.Models;
 using QuicFileSharing.GUI.Utils;
@@ -41,40 +42,55 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool forceIPv4;
     [ObservableProperty]
-    private string portV4Text;
+    private string portV4Text = string.Empty;
     [ObservableProperty] 
-    private string apiV4Text;
+    private string apiV4Text = string.Empty;
     [ObservableProperty] 
-    private string apiV6Text;
+    private string apiV6Text = string.Empty;
     [ObservableProperty]
-    private string signalingServerText;
+    private string signalingServerText = string.Empty;
     [ObservableProperty]
     private string settingsText = string.Empty;
     [ObservableProperty]
     private bool isTransferInProgress;
     [ObservableProperty]
-    private string filePath;    
+    private string filePath = string.Empty;    
     
-    private AppConfig appConfig;
+    private readonly AppConfig appConfig = DataStore.Load();
     private CancellationTokenSource cts;
-
+    private QuicPeer peer;
+    
     
     public MainWindowViewModel()
     {
         LoadConfig();
     }
 
+    public async Task CheckQuicSupportAsync(Window window)
+    {
+        if (!QuicListener.IsSupported || !QuicConnection.IsSupported) 
+        {
+            var msgBox = MessageBoxManager
+                .GetMessageBoxStandard(
+                    "Unsupported Feature",
+                    "QUIC is not supported on this system.\nThe application will now close.",
+                    ButtonEnum.Ok,
+                    Icon.Error);
+
+            await msgBox.ShowAsPopupAsync(window);
+
+            window.Close();
+        }
+    }
+
     private void LoadConfig()
     {
-        appConfig = DataStore.Load();
         ForceIPv4 = appConfig.ForceIPv4;
         PortV4Text = appConfig.PortV4.ToString();
         ApiV4Text = appConfig.ApiV4;
         ApiV6Text = appConfig.ApiV6;
         SignalingServerText = appConfig.SignalingServer;
     }
-    
-    private QuicPeer peer;
     
     [RelayCommand]
     private async Task JoinRoom()
