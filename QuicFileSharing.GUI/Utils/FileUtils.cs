@@ -72,9 +72,16 @@ public static class FileUtils
     // }
     public static string? ResolveFolderPath(IStorageFolder folder)
     {
+        return ResolvePath(new Uri(folder.Path.ToString(), UriKind.Absolute));
+    }
+    public static string? ResolveFilePath(IStorageFile file)
+    {
+        return ResolvePath(new Uri(file.Path.ToString(), UriKind.Absolute));
+    }
+    private static string? ResolvePath(Uri uri)
+    {
         try
         {
-            var uri = new Uri(folder.Path.ToString(), UriKind.Absolute);
             var path = uri.LocalPath;
             
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -87,9 +94,5 @@ public static class FileUtils
             Console.WriteLine(ex);
             return null;
         }
-        
     }
-
-
-
 }

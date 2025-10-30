@@ -303,7 +303,6 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             startLocation = await window.StorageProvider.TryGetFolderFromPathAsync(appConfig.SenderPath);
         }
-        // todo validate permissions
         var files = await window.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "Select file to send",
@@ -318,12 +317,18 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
         var file = files[0];
-        var path = StaticUtils.ResolveFilePath(file);
+        var path = FileUtils.ResolveFilePath(file);
         if (path is null)
         {
             peer.IsSending = false;
             RoomText = "Error: Could not determine file path.";
             return;       
+        }
+        if (!FileUtils.CanReadFile(path))
+        {
+            peer.IsSending = false;
+            RoomText = $"Error: Permission denied for file: {path}";
+            return;      
         }
         var selectedDir = Path.GetDirectoryName(path);
         if (!string.IsNullOrWhiteSpace(selectedDir))

@@ -28,19 +28,4 @@ public static class StaticUtils
             return $"{(int)time.TotalHours}h {time.Minutes}m {time.Seconds}s";
         return time.TotalMinutes >= 1 ? $"{time.Minutes}m {time.Seconds}s" : $"{time.Seconds}s";
     }
-    public static string? ResolveFilePath(IStorageFile file)
-    {
-        if (file.Path is not { IsAbsoluteUri: true, Scheme: "file" })
-            return null;
-        
-        var path = Uri.UnescapeDataString(file.Path.LocalPath);
-
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return path;
-        path = path.Replace('/', '\\');
-
-        if (!string.IsNullOrEmpty(file.Path.Host))
-            path = $@"\\{file.Path.Host}{path[1..]}";
-
-        return path;
-    }
 }

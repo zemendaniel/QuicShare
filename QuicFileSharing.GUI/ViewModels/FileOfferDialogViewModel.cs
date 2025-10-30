@@ -22,9 +22,11 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     private readonly TaskCompletionSource<(bool accepted, string? path)> tcs = new();
 
     public Task<(bool accepted, string? path)> ResultTask => tcs.Task;
+    private readonly long fileSize;
 
     public FileOfferDialogViewModel(string fileName, long fileSize, string savePath)
     {
+        this.fileSize = fileSize;
         Message = $"Incoming file: {fileName} ({FormatBytes(fileSize)})";
         SavePath = savePath;
     }
@@ -48,14 +50,21 @@ public partial class FileOfferDialogViewModel : ViewModelBase
             return;
         
         var folderPath = FileUtils.ResolveFolderPath(folders[0]);
-        // todo validate permissions
         if (folderPath is null)
         {
-            ErrorText = "Permission was denied for the selected folder. Default path will be used.";
+            ErrorText = $"Could not resolve {folderPath}. Default path will be used or chose another folder.";
             SavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop); 
             return;
         }
-        
+
+        if (!FileUtils.CanWriteToFolder(folderPath, fileSize))
+        {
+            ErrorText = $"Cannot write to {folderPath}. Make sure permissions are correct" +
+                        " and you have enough space. Default path will be used or chose another folder.";
+            SavePath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop); 
+            return;       
+        }
+            
         SavePath = folderPath;
     }
 
