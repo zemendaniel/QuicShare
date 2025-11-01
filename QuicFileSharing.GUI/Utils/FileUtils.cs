@@ -42,34 +42,7 @@ public static class FileUtils
             return false;
         }
     }
-    // public static string? ResolveFolderPath(IStorageFolder folder)
-    // {
-    //     Console.WriteLine(folder.Path);
-    //     // Console.WriteLine(folder.Path.LocalPath);
-    //     // Console.WriteLine(folder.Path.AbsolutePath);
-    //     // Console.WriteLine(folder.Path.IsFile);
-    //     
-    //     if (folder.Path.IsAbsoluteUri)
-    //     
-    //     
-    //     var result = (Path.Exists(folder.Path.ToString()));
-    //     Console.WriteLine(folder.Path.IsFile);
-    //     Console.WriteLine(result);
-    //     return result ? folder.Path.ToString() : null;
-    //
-    //     // if (folder.Path is not { IsAbsoluteUri: true, Scheme: "file" })
-    //     //     return null;
-    //     //
-    //     // var path = Uri.UnescapeDataString(folder.Path.LocalPath);
-    //     //
-    //     // if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return path;
-    //     //
-    //     // path = path.Replace('/', '\\');
-    //     // if (folder.Path.Host != "")
-    //     //     path = $@"\\{folder.Path.Host}{path[1..]}";
-    //     //
-    //     // return path;
-    // }
+
     public static string? ResolveFolderPath(IStorageFolder folder)
     {
         return ResolvePath(new Uri(folder.Path.ToString(), UriKind.Absolute));

@@ -5,6 +5,11 @@
     <Nullable>enable</Nullable>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
+    
+  <PropertyGroup>
+    <!-- Disable all platform compatibility warnings -->
+    <NoWarn>$(NoWarn);CS8774</NoWarn>
+  </PropertyGroup>
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />

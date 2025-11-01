@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
-using Avalonia.Platform.Storage;
 
 namespace QuicFileSharing.GUI.Utils;
 

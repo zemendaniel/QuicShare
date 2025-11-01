@@ -54,7 +54,7 @@ public abstract class QuicPeer
 
     public string? JoinedFilePath { get; private set; }
 
-    private Channel<string> controlSendQueue = Channel.CreateUnbounded<string>();
+    private readonly Channel<string> controlSendQueue = Channel.CreateUnbounded<string>();
 
     protected readonly TaskCompletionSource bothStreamsReady =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -513,12 +513,12 @@ public abstract class QuicPeer
 
         var elapsedSinceLastReport = progressStopwatch.Elapsed - lastSpeedUpdate;
 
-        // Report UI progress every 0.5s
+        // Report UI progress every 0.5 s
         if (elapsedSinceLastReport >= progressReportInterval)
         {
             lastSpeedUpdate = progressStopwatch.Elapsed;
 
-            // Update estimated speed only every 2 seconds
+            // Update the estimated speed only every 2 seconds
             var elapsedSinceLastEstimation = progressStopwatch.Elapsed - lastSpeedEstimation;
             if (elapsedSinceLastEstimation >= speedEstimationInterval)
             {

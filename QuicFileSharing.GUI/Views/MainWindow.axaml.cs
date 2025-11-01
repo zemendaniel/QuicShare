@@ -1,5 +1,3 @@
-using System.Drawing;
-using System.Threading.Tasks;
 using Avalonia.Controls;
 using QuicFileSharing.GUI.ViewModels;
 

@@ -134,7 +134,7 @@ public class SignalingUtils(string ipv4Echo, string ipv6Echo): IDisposable
 
         PeerIp = IPAddress.Parse(answer.ServerIp);
         PeerPort = answer.ServerPort;
-        ServerThumbprint = answer.ServerThumbprint; ;
+        ServerThumbprint = answer.ServerThumbprint; 
     }
     private int GetFreeUdpPort()
     {
