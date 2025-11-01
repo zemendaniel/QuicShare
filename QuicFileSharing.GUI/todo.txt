@@ -1,5 +1,6 @@
 a lot of testing!!!!
 
 nicer ui
+drag and drop file sending
 
 pause, resume later, cancel
