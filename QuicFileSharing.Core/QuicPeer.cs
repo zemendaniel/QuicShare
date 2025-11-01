@@ -74,7 +74,7 @@ public abstract class QuicPeer
     private static readonly int fileChunkSize = 1024 * 1024;
     private static readonly int fileBufferSize = 16 * 1014 * 1024;
     private static readonly TimeSpan progressReportInterval = TimeSpan.FromSeconds(0.5);
-    private const int chunksPerEstimation = 3;
+    private static readonly TimeSpan speedEstimationInterval = TimeSpan.FromSeconds(2);
     
     public event Action<string>? OnDisconnected;
     public event Action<string, long>? OnFileOffered;
@@ -192,7 +192,8 @@ public abstract class QuicPeer
         progressStopwatch = null;
         lastSpeedUpdate = TimeSpan.Zero;
         previousBytes = 0;
-        chunksSinceLastEstimation = 0;
+        estimatedSpeed = 0;
+        lastSpeedEstimation = TimeSpan.Zero;
     }
     
     private async Task 
@@ -501,7 +502,8 @@ public abstract class QuicPeer
     
     private TimeSpan lastSpeedUpdate = TimeSpan.Zero;
     private long previousBytes;
-    private int chunksSinceLastEstimation;
+    private TimeSpan lastSpeedEstimation = TimeSpan.Zero;
+    private double estimatedSpeed;
 
 
     private void UpdateProgress(long bytesTransferred, long totalBytes)
@@ -509,28 +511,31 @@ public abstract class QuicPeer
         if (progressStopwatch == null)
             return;
 
-        var elapsed = progressStopwatch.Elapsed - lastSpeedUpdate;
-        if (elapsed < progressReportInterval) return;
+        var elapsedSinceLastReport = progressStopwatch.Elapsed - lastSpeedUpdate;
 
-        var instantSpeed = (bytesTransferred - previousBytes) / elapsed.TotalSeconds;
-
-        chunksSinceLastEstimation++;
-
-        if (chunksSinceLastEstimation >= chunksPerEstimation)
+        // Report UI progress every 0.5s
+        if (elapsedSinceLastReport >= progressReportInterval)
         {
-            previousBytes = bytesTransferred;
-            chunksSinceLastEstimation = 0;
+            lastSpeedUpdate = progressStopwatch.Elapsed;
+
+            // Update estimated speed only every 2 seconds
+            var elapsedSinceLastEstimation = progressStopwatch.Elapsed - lastSpeedEstimation;
+            if (elapsedSinceLastEstimation >= speedEstimationInterval)
+            {
+                estimatedSpeed = (bytesTransferred - previousBytes) / elapsedSinceLastEstimation.TotalSeconds;
+                previousBytes = bytesTransferred;
+                lastSpeedEstimation = progressStopwatch.Elapsed;
+            }
+
+            FileTransferProgress?.Report(new ProgressInfo
+            {
+                BytesTransferred = bytesTransferred,
+                TotalBytes = totalBytes,
+                SpeedBytesPerSecond = estimatedSpeed
+            });
         }
-
-        lastSpeedUpdate = progressStopwatch.Elapsed;
-
-        FileTransferProgress?.Report(new ProgressInfo
-        {
-            BytesTransferred = bytesTransferred,
-            TotalBytes = totalBytes,
-            SpeedBytesPerSecond = instantSpeed 
-        });
     }
+
 
 
     private void ReportFinalProgress(long totalBytesSent, long fileSize)

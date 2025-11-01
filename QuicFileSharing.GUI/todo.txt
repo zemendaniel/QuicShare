@@ -1,6 +1,5 @@
 a lot of testing!!!!
 
-proper ui
-check avg speed after every 10 packets
+nicer ui
 
 pause, resume later, cancel
