@@ -64,6 +64,7 @@ public abstract class QuicPeer
     private TaskCompletionSource<string>? fileHashReady;
     private bool controlReady;
     private bool fileReady;
+    private Stopwatch? progressStopwatch;
 
     public bool IsTransferInProgress { get; private set; }
 
@@ -72,6 +73,8 @@ public abstract class QuicPeer
     protected static readonly TimeSpan keepAliveInterval = TimeSpan.FromSeconds(2);
     private static readonly int fileChunkSize = 1024 * 1024;
     private static readonly int fileBufferSize = 16 * 1014 * 1024;
+    private static readonly TimeSpan progressReportInterval = TimeSpan.FromSeconds(0.5);
+    private const int chunksPerEstimation = 3;
     
     public event Action<string>? OnDisconnected;
     public event Action<string, long>? OnFileOffered;
@@ -186,6 +189,10 @@ public abstract class QuicPeer
         saveFolder = null;
         IsTransferInProgress = false;
         OnTransferStateChanged?.Invoke();
+        progressStopwatch = null;
+        lastSpeedUpdate = TimeSpan.Zero;
+        previousBytes = 0;
+        chunksSinceLastEstimation = 0;
     }
     
     private async Task 
@@ -347,10 +354,7 @@ public abstract class QuicPeer
         
         long totalBytesSent = 0;
         var fileSize = inputFile.Length;
-        var stopwatch = Stopwatch.StartNew();
-        long previousBytes = 0;
-        var speedInterval = TimeSpan.FromSeconds(0.5);
-        var lastSpeedUpdate = stopwatch.Elapsed;
+        progressStopwatch = Stopwatch.StartNew();
         
         while (true)
         {
@@ -366,36 +370,16 @@ public abstract class QuicPeer
             await hashQueue.Writer.WriteAsync(new ArraySegment<byte>(buffer, 0, bytesRead), token);
 
             totalBytesSent += bytesRead;
-            var elapsed = stopwatch.Elapsed - lastSpeedUpdate;
-            if (elapsed >= speedInterval)
-            {
-                var speed = (totalBytesSent - previousBytes) / elapsed.TotalSeconds;
-                previousBytes = totalBytesSent;
-                lastSpeedUpdate = stopwatch.Elapsed;
-                FileTransferProgress?.Report(new ProgressInfo
-                {
-                    BytesTransferred = totalBytesSent,
-                    TotalBytes = fileSize,
-                    SpeedBytesPerSecond = speed
-                });
-            }
+            UpdateProgress(totalBytesSent, fileSize);
             await Task.Yield();
         }
 
         await fileStream.FlushAsync(token);
+        progressStopwatch.Stop();
         hashQueue.Writer.Complete();
         
-        FileTransferProgress?.Report(new ProgressInfo
-        {
-            BytesTransferred = totalBytesSent,
-            TotalBytes = fileSize,
-            IsCompleted = true,
-            AverageSpeedBytesPerSecond = totalBytesSent / stopwatch.Elapsed.TotalSeconds,
-            TotalTime = stopwatch.Elapsed
-        });
-
-        
         var fileHash = await hashTask;
+        ReportFinalProgress(totalBytesSent, fileSize);
         // Console.WriteLine(fileHash);
         await QueueControlMessage($"FILE_SENT:{fileHash}");
     }
@@ -430,10 +414,7 @@ public abstract class QuicPeer
             bufferSize: fileChunkSize,
             useAsync: true);
 
-        var stopwatch = Stopwatch.StartNew();
-        long previousBytes = 0;
-        var speedInterval = TimeSpan.FromSeconds(0.5);
-        var lastSpeedUpdate = stopwatch.Elapsed;
+        progressStopwatch = Stopwatch.StartNew();
 
         while (totalBytesReceived < fileSize)
         {
@@ -447,38 +428,16 @@ public abstract class QuicPeer
             await outputFile.WriteAsync(buffer.AsMemory(0, bytesRead), token);
             await hashQueue.Writer.WriteAsync(new ArraySegment<byte>(buffer, 0, bytesRead), token);
             totalBytesReceived += bytesRead;
-            
-            var elapsed = stopwatch.Elapsed - lastSpeedUpdate;
-            if (elapsed < speedInterval) continue;
-            
-            var speed = (totalBytesReceived - previousBytes) / elapsed.TotalSeconds;
-            previousBytes = totalBytesReceived;
-            lastSpeedUpdate = stopwatch.Elapsed;
-            FileTransferProgress?.Report(new ProgressInfo
-            {
-                BytesTransferred = totalBytesReceived,
-                TotalBytes = fileSize,
-                SpeedBytesPerSecond = speed
-            });
+            UpdateProgress(totalBytesReceived, fileSize);
             await Task.Yield();
         }
-
+        progressStopwatch.Stop();
         hashQueue.Writer.Complete();
         
-        FileTransferProgress?.Report(new ProgressInfo
-        {
-            BytesTransferred = totalBytesReceived,
-            TotalBytes = fileSize,
-            IsCompleted = true,
-            AverageSpeedBytesPerSecond = totalBytesReceived / stopwatch.Elapsed.TotalSeconds,
-            TotalTime = stopwatch.Elapsed
-        });
-
         var actualFileHash = await hashTask;
         // Console.WriteLine($"SHA256: {actualFileHash}");
-
-        stopwatch.Stop();
         await outputFile.FlushAsync(token);
+        ReportFinalProgress(totalBytesReceived, fileSize);
 
         var expectedFileHash = await fileHashReady!.Task;
         var success = actualFileHash == expectedFileHash;
@@ -539,6 +498,56 @@ public abstract class QuicPeer
             }
         }
     }
+    
+    private TimeSpan lastSpeedUpdate = TimeSpan.Zero;
+    private long previousBytes;
+    private int chunksSinceLastEstimation;
+
+
+    private void UpdateProgress(long bytesTransferred, long totalBytes)
+    {
+        if (progressStopwatch == null)
+            return;
+
+        var elapsed = progressStopwatch.Elapsed - lastSpeedUpdate;
+        if (elapsed < progressReportInterval) return;
+
+        var instantSpeed = (bytesTransferred - previousBytes) / elapsed.TotalSeconds;
+
+        chunksSinceLastEstimation++;
+
+        if (chunksSinceLastEstimation >= chunksPerEstimation)
+        {
+            previousBytes = bytesTransferred;
+            chunksSinceLastEstimation = 0;
+        }
+
+        lastSpeedUpdate = progressStopwatch.Elapsed;
+
+        FileTransferProgress?.Report(new ProgressInfo
+        {
+            BytesTransferred = bytesTransferred,
+            TotalBytes = totalBytes,
+            SpeedBytesPerSecond = instantSpeed 
+        });
+    }
+
+
+    private void ReportFinalProgress(long totalBytesSent, long fileSize)
+    {
+        if (progressStopwatch == null)
+            return;
+        
+        FileTransferProgress?.Report(new ProgressInfo
+        {
+            BytesTransferred = totalBytesSent,
+            TotalBytes = fileSize,
+            IsCompleted = true,
+            AverageSpeedBytesPerSecond = totalBytesSent / progressStopwatch.Elapsed.TotalSeconds,
+            TotalTime = progressStopwatch.Elapsed
+        });
+    }
+    
 
     private static X509Certificate2 CreateSelfSignedCertificate()
     {
