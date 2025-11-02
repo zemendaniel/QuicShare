@@ -5,129 +5,148 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:converters="clr-namespace:QuicFileSharing.GUI.Converters"
         xmlns:models="clr-namespace:QuicFileSharing.GUI.Models"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d"
         x:Class="QuicFileSharing.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="QuicShare"
-        WindowStartupLocation="CenterScreen">
-    
+        WindowStartupLocation="CenterScreen"
+        Width="800"
+        Height="450"
+        CanResize="False"
+        SystemDecorations="None"
+        Background="Transparent">
+
     <Window.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
     </Window.Resources>
-    
+
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-    
-    <Grid Margin="20" VerticalAlignment="Center" HorizontalAlignment="Center">
-        <!-- Lobby -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                    IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}">
-            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,20" TextAlignment="Center" Padding="10,5">What would you like to do?</TextBlock>
-            <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Join an existing room:</TextBlock>
-            <StackPanel Orientation="Horizontal" 
-                        HorizontalAlignment="Center" 
-                        VerticalAlignment="Center" 
-                        Margin="0,0,0,16">
-                <TextBox Text="{Binding RoomCode}" 
-                         Watermark="Enter your code here..." 
-                         Width="300" 
-                         TextAlignment="Center"
-                         VerticalContentAlignment="Center"
-                         VerticalAlignment="Center"
-                         Margin="0,0,10,0"
-                         Padding="8,4">
-                    <TextBox.KeyBindings>
-                        <KeyBinding Gesture="Enter" Command="{Binding JoinRoomCommand}"/>
-                    </TextBox.KeyBindings>
-                </TextBox>
-                <Button Content="Join" 
-                        Command="{Binding JoinRoomCommand}" 
-                        VerticalAlignment="Center"
-                        Padding="12,6"/>
-            </StackPanel>
-            <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Create a new room:</TextBlock>
-            <Button HorizontalAlignment="Center" Content="Create Room" Command="{Binding CreateRoomCommand}" Margin="0,0,0,8" Padding="12,6"/>
-            <TextBlock Text="{Binding LobbyText}" TextWrapping="Wrap" 
-                       Margin="0,0,0,0" Padding="5,3" TextAlignment="Center"/>
-            <Button HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="Settings" 
-                    Command="{Binding OpenSettingsCommand}" Margin="10" 
-                    Padding="12,6"/>
-        </StackPanel>
-        
-        
-        <!-- WaitingForConnection -->
-        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.WaitingForConnection}}">
-            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">
-                Share this code with your peer:
-            </TextBlock>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0, 0, 0, 8">
-                <SelectableTextBlock Margin="0, 0, 4, 0" Text="{Binding RoomCode}" FontWeight="Bold" VerticalAlignment="Center"/>
-                <Button VerticalAlignment="Center" Command="{Binding CopyRoomCodeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}">Copy to clipboard</Button>
-            </StackPanel>
-            <TextBlock FontWeight="Light" TextAlignment="Center" FontSize="12" Text="Waiting for incoming connection..."></TextBlock>
-        </StackPanel>
-        
-        <!-- InRoom -->
-        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}"
-                    VerticalAlignment="Center" HorizontalAlignment="Center">
-            <TextBlock FontWeight="SemiBold"
-                       FontSize="24"
-                       Margin="0,0,0,8"
-                       TextAlignment="Center"
-                       Padding="10,5"
-                       Text="{Binding RoomCode, StringFormat='You are in room: {0}'}"/>
-            <Button Content="Send File" HorizontalAlignment="Center" Margin="0,0,0,4" 
-                    Command="{Binding SendFileCommand}" 
-                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
-                    IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
-            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20"
-                       IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}">
-                You are open to receiving files.
-            </TextBlock>
-            <TextBlock Text="{Binding RoomText}" TextAlignment="Center"></TextBlock>
-            <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center"></SelectableTextBlock>
-            <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400">
-                <ProgressBar Minimum="0" Maximum="100"
-                             Value="{Binding ProgressPercentage}" Height="20"/>
-                <TextBlock Text="{Binding ProgressText}" FontWeight="Bold"/>
-            </StackPanel>
-        </StackPanel> 
-        
-        <!-- Settings -->
-        <StackPanel IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center">
-            <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Settings</TextBlock>
-            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
-                Leave empty and save to use default values.
-            </TextBlock>
-            <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Margin="0,0,0,12"/>
-            <TextBlock Margin="0,0,0,8">IPv4 port (1-65535) (if Force IPv4 is enabled):</TextBlock>
-            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
-                           IsEnabled="{Binding ForceIPv4}"
-                           Increment="1"
-                           FormatString="0"
-                           Margin="0,0,0,16">
-            </NumericUpDown>
-            <TextBlock Margin="0,0,0,8">Signaling Server:</TextBlock>
-            <TextBox Text="{Binding SignalingServerText}" Margin="0,0,0,16"/>
-            <TextBlock Margin="0,0,0,8">IPv6 echo API:</TextBlock>
-            <TextBox Text="{Binding ApiV6Text}" Margin="0,0,0,16"/>
-            <TextBlock Margin="0,0,0,8">IPv4 echo API</TextBlock>
-            <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
-            <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20" TextWrapping="Wrap"
-                       MaxWidth="500">
-                If you are using your own APIs, make sure that they are working and are accessible. Also make sure that you and
-                your peer are using the same signaling server.
-            </TextBlock>
-            <TextBlock Text="{Binding SettingsText}" MaxWidth="500" TextWrapping="Wrap"></TextBlock>
-            <StackPanel Orientation="Horizontal" Spacing="8"  HorizontalAlignment="Center">
-                <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}"/>
-                <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}"/>
-            </StackPanel>
-        </StackPanel>
-    </Grid>
+
+    <!-- Outer border with rounded corners and shadow -->
+    <Border Background="#1e1e1e" CornerRadius="12" BorderThickness="0" Padding="0">
+        <Grid RowDefinitions="Auto,*">
+            
+            <!-- Custom Top Bar -->
+            <Border Grid.Row="0" Background="#222" Height="30" PointerPressed="TitleBar_PointerPressed"
+                    CornerRadius="12,12,0,0" ClipToBounds="True">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6">
+                        <TextBlock Text="QuicShare" Foreground="White" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                        <Image Source="/Assets/avalonia-logo.ico" Width="16" Height="16" VerticalAlignment="Center" Margin="6,0"/>
+                    </StackPanel>
+
+                    <!-- Minimize button -->
+                    <Button Grid.Column="2" Width="28" Height="28" 
+                            VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Background="Transparent" BorderBrush="Transparent"
+                            Click="MinimizeButtonClick">
+                        <TextBlock Text="-" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button.Styles>
+                            <Style Selector="Button:hover">
+                                <Setter Property="Background" Value="#444"/>
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+
+                    <!-- Close button -->
+                    <Button Grid.Column="3" Width="28" Height="28" 
+                            VerticalAlignment="Center" HorizontalAlignment="Center"
+                            Background="Transparent" BorderBrush="Transparent"
+                            Padding="2, 0, 2, 0"
+                            Click="CloseButton_Click">
+                        <TextBlock Text="X" FontSize="16" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button.Styles>
+                            <Style Selector="Button:hover">
+                                <Setter Property="Background" Value="#444"/>
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </Grid>
+            </Border>
+
+
+            <!-- Content Area -->
+            <Grid Grid.Row="1" Margin="20">
+                <!-- Lobby -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}">
+                    <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,20" TextAlignment="Center" Padding="10,5">What would you like to do?</TextBlock>
+                    <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Join an existing room:</TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <TextBox Text="{Binding RoomCode}" Width="300" Watermark="Enter your code here..." TextAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,10,0" Padding="8,4">
+                            <TextBox.KeyBindings>
+                                <KeyBinding Gesture="Enter" Command="{Binding JoinRoomCommand}"/>
+                            </TextBox.KeyBindings>
+                        </TextBox>
+                        <Button Content="Join" Command="{Binding JoinRoomCommand}" Padding="12,6"/>
+                    </StackPanel>
+                    <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Create a new room:</TextBlock>
+                    <Button Content="Create Room" Command="{Binding CreateRoomCommand}" HorizontalAlignment="Center" Margin="0,0,0,8" Padding="12,6"/>
+                    <TextBlock Text="{Binding LobbyText}" TextWrapping="Wrap" TextAlignment="Center" Padding="5,3"/>
+                    <Button Content="Settings" Command="{Binding OpenSettingsCommand}" HorizontalAlignment="Center" Margin="10" Padding="12,6"/>
+                </StackPanel>
+
+                <!-- WaitingForConnection -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.WaitingForConnection}}">
+                    <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Share this code with your peer:</TextBlock>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
+                        <SelectableTextBlock Text="{Binding RoomCode}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <Button Content="Copy to clipboard" Command="{Binding CopyRoomCodeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+                    </StackPanel>
+                    <TextBlock FontWeight="Light" TextAlignment="Center" FontSize="12">Waiting for incoming connection...</TextBlock>
+                </StackPanel>
+
+                <!-- InRoom -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}">
+                    <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5"
+                               Text="{Binding RoomCode, StringFormat='You are in room: {0}'}"/>
+                    <Button Content="Send File" Command="{Binding SendFileCommand}" Padding="12,6" HorizontalAlignment="Center"
+                            IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
+                    <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20"
+                               IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}">
+                        You are open to receiving files.
+                    </TextBlock>
+                    <TextBlock Text="{Binding RoomText}" TextAlignment="Center"/>
+                    <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center"/>
+                    <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400">
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercentage}" Height="20"/>
+                        <TextBlock Text="{Binding ProgressText}" FontWeight="Bold"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Settings -->
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}">
+                    <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Settings</TextBlock>
+                    <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
+                        Leave empty and save to use default values.
+                    </TextBlock>
+                    <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Margin="0,0,0,12"/>
+                    <TextBlock Margin="0,0,0,8">IPv4 port (1-65535) (if Force IPv4 is enabled):</TextBlock>
+                    <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}" Increment="1" FormatString="0" Margin="0,0,0,16" IsEnabled="{Binding ForceIPv4}"/>
+                    <TextBlock Margin="0,0,0,8">Signaling Server:</TextBlock>
+                    <TextBox Text="{Binding SignalingServerText}" Margin="0,0,0,16"/>
+                    <TextBlock Margin="0,0,0,8">IPv6 echo API:</TextBlock>
+                    <TextBox Text="{Binding ApiV6Text}" Margin="0,0,0,16"/>
+                    <TextBlock Margin="0,0,0,8">IPv4 echo API:</TextBlock>
+                    <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
+                    <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20" TextWrapping="Wrap" MaxWidth="500">
+                        If you are using your own APIs, make sure that they are working and are accessible. Also make sure that you and your peer are using the same signaling server.
+                    </TextBlock>
+                    <TextBlock Text="{Binding SettingsText}" MaxWidth="500" TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                        <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}"/>
+                        <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}"/>
+                    </StackPanel>
+                </StackPanel>
+
+            </Grid>
+        </Grid>
+    </Border>
 </Window>
