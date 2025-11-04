@@ -239,12 +239,12 @@ public partial class MainWindowViewModel : ViewModelBase
             LobbyText = $"Could not connect to coordination server: {errorMessage}";
             return;
         }        
-        var info = await signaling.RoomInfoTcs.Task;
+        var info = await signaling.RoomInfoTcs.Task.WaitAsync(cts.Token);
         
         State = AppState.WaitingForConnection;
         RoomCode = info.id;
 
-        var offer = await signaling.OfferTcs.Task;
+        var offer = await signaling.OfferTcs.Task.WaitAsync(cts.Token);;
         string answer;
         try
         {

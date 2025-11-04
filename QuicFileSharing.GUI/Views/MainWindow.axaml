@@ -106,7 +106,9 @@
                             IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}">
                     <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5"
                                Text="{Binding RoomCode, StringFormat='You are in room: {0}'}"/>
-                    <Button Content="Send File" Command="{Binding SendFileCommand}" Padding="12,6" HorizontalAlignment="Center"
+                    <Button Content="Send File" Command="{Binding SendFileCommand}"
+                            CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                            Padding="12,6" HorizontalAlignment="Center"
                             IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
                     <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20"
                                IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}">
