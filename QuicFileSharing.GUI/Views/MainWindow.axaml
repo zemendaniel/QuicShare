@@ -11,8 +11,10 @@
         Icon="avares://QuicFileSharing.GUI/Assets/icon.png"
         Title="QuicShare"
         WindowStartupLocation="CenterScreen"
-        Width="800"
-        Height="450"
+        Width="900"
+        MaxWidth="900"
+        Height="500"
+        MaxHeight="500"
         CanResize="False"
         SystemDecorations="None"
         Background="Transparent">
@@ -26,31 +28,34 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <!-- Outer border with rounded corners and shadow -->
     <Border CornerRadius="12" BorderThickness="0" Padding="0" Background="{DynamicResource SecondaryColor}">
         
         <Grid RowDefinitions="Auto,*">
             
             <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <!-- First wave -->
                 <Path Fill="{DynamicResource TextBrush}" Opacity="0.2"
-                      Data="M0,350 C200,300 400,400 800,320 L800,450 L0,450 Z"/>
+                      Data="M0,389 C225,333 450,444 900,356 L900,500 L0,500 Z"/>
+    
+                <!-- Second wave -->
                 <Path Fill="{DynamicResource TextBrush}" Opacity="0.1"
-                      Data="M0,380 C250,330 550,420 800,350 L800,450 L0,450 Z"/>
+                      Data="M0,422 C281,367 619,467 900,389 L900,500 L0,500 Z"/>
             </Canvas>
+
             
             <!-- Custom Top Bar -->
             <Border Grid.Row="0" Background="{DynamicResource PrimaryColor}" Height="30" PointerPressed="TitleBar_PointerPressed"
                     CornerRadius="12,12,0,0" ClipToBounds="True">
                 <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6">
-                        <TextBlock Text="QuicShare" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                        <TextBlock Text="QuicShare" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                         <Border>
                         <!-- <Image Source="avares://QuicFileSharing.GUI/Assets/icon.png" Width="16" Height="16" VerticalAlignment="Center" Margin="6,0"/> -->
                         </Border>
                     </StackPanel>
 
                     <!-- Minimize button -->
-                    <Button Grid.Column="2" Width="28" Height="28" 
+                    <Button Grid.Column="2" Width="28" Height="28" FontWeight="Bold"
                             VerticalAlignment="Center" HorizontalAlignment="Center"
                             Background="Transparent" BorderBrush="Transparent"
                             Click="MinimizeButtonClick">
@@ -63,7 +68,7 @@
                     </Button>
 
                     <!-- Close button -->
-                    <Button Grid.Column="3" Width="28" Height="28" 
+                    <Button Grid.Column="3" Width="28" Height="28" FontWeight="Bold"
                             VerticalAlignment="Center" HorizontalAlignment="Center"
                             Background="Transparent" BorderBrush="Transparent"
                             Padding="2, 0, 2, 0"
@@ -82,23 +87,76 @@
             <!-- Content Area -->
             <Grid Grid.Row="1" Margin="20">
                 <!-- Lobby -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}">
-                    <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,20" TextAlignment="Center" Padding="10,5">What would you like to do?</TextBlock>
-                    <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Join an existing room:</TextBlock>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
-                        <TextBox Text="{Binding RoomCode}" Width="300" Watermark="Enter your code here..." TextAlignment="Center" VerticalContentAlignment="Center" Margin="0,0,10,0" Padding="8,4">
-                            <TextBox.KeyBindings>
-                                <KeyBinding Gesture="Enter" Command="{Binding JoinRoomCommand}"/>
-                            </TextBox.KeyBindings>
-                        </TextBox>
-                        <Button Content="Join" Command="{Binding JoinRoomCommand}" Padding="12,6"/>
-                    </StackPanel>
-                    <TextBlock FontWeight="Bold" FontSize="20" Margin="0,0,0,12" TextAlignment="Center" Padding="8,4">Create a new room:</TextBlock>
-                    <Button Content="Create Room" Command="{Binding CreateRoomCommand}" HorizontalAlignment="Center" Margin="0,0,0,8" Padding="12,6"/>
-                    <TextBlock Text="{Binding LobbyText}" TextWrapping="Wrap" TextAlignment="Center" Padding="5,3"/>
-                    <Button Content="Settings" Command="{Binding OpenSettingsCommand}" HorizontalAlignment="Center" Margin="10" Padding="12,6"/>
-                </StackPanel>
+<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}"
+            Spacing="20" Width="400">
+
+    <!-- Header -->
+    <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10">
+        <TextBlock Foreground="{DynamicResource TextBrush}" 
+                   FontWeight="SemiBold" FontSize="24" TextAlignment="Center">
+            What would you like to do?
+        </TextBlock>
+    </Border>
+
+    <!-- Join Existing Room -->
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center">
+            Join Existing Room
+        </TextBlock>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+            <TextBox Text="{Binding RoomCode}" Width="300" Watermark="Enter Code Here..." 
+                     TextAlignment="Center" VerticalContentAlignment="Center"
+                     FontWeight="Bold"
+                     Padding="8,4" CornerRadius="12" Background="{DynamicResource TextBrush}" 
+                     Foreground="{DynamicResource PrimaryBrush}">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter" Command="{Binding JoinRoomCommand}"/>
+                </TextBox.KeyBindings>
+            </TextBox>
+
+            <Button Content="Join" Command="{Binding JoinRoomCommand}" Padding="12,6"
+                    CornerRadius="12" Foreground="{DynamicResource TextBrush}" 
+                    FontWeight="Bold"
+                    Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource AccentBrush}"/>
+        </StackPanel>
+    </StackPanel>
+
+    <!-- Create New Room -->
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center">
+            Create New Room
+        </TextBlock>
+        <Button Content="Create Room" Command="{Binding CreateRoomCommand}" 
+                HorizontalAlignment="Center" Padding="12,6"
+                FontWeight="Bold"
+                CornerRadius="12" Foreground="{DynamicResource TextBrush}" 
+                Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource AccentBrush}"/>
+    </StackPanel>
+
+    <!-- Lobby Text -->
+    <TextBlock Text="{Binding LobbyText}" 
+               Foreground="{DynamicResource TextBrush}" 
+               FontWeight="Bold"
+               FontSize="16"
+               TextWrapping="Wrap"
+               TextAlignment="Center"
+               MaxWidth="400"
+               Margin="0,10,0,10"/>
+
+    <!-- Settings -->
+    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="10">
+        <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center">
+            Change Settings
+        </TextBlock>
+        <Button Content="Settings" Command="{Binding OpenSettingsCommand}" 
+                HorizontalAlignment="Center" Padding="12,6"
+                CornerRadius="12" Foreground="{DynamicResource TextBrush}" 
+                Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource AccentBrush}"/>
+    </StackPanel>
+</StackPanel>
+
 
                 <!-- WaitingForConnection -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"

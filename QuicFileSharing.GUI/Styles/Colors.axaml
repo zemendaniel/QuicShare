@@ -7,11 +7,13 @@
         <Color x:Key="AccentColor">#5e7ce2</Color>
         <Color x:Key="TextColor">#cfdee7</Color>
         <Color x:Key="SuccessColor">#92b4f4</Color>
+        <Color x:Key="InputColor">#2FDDF4</Color>
 
         <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
         <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
         <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
         <SolidColorBrush x:Key="TextBrush" Color="{DynamicResource TextColor}" />
         <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
+        <SolidColorBrush x:Key="InputBrush" Color="{DynamicResource InputColor}" />
     </Style.Resources>
 </Style>
