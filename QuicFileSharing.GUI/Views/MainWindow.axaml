@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         x:Class="QuicFileSharing.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
+        Icon="avares://QuicFileSharing.GUI/Assets/icon.png"
         Title="QuicShare"
         WindowStartupLocation="CenterScreen"
         Width="800"
@@ -27,16 +27,18 @@
     </Design.DataContext>
 
     <!-- Outer border with rounded corners and shadow -->
-    <Border Background="#1e1e1e" CornerRadius="12" BorderThickness="0" Padding="0">
+    <Border Background="{DynamicResource SecondaryBrush}" CornerRadius="12" BorderThickness="0" Padding="0">
         <Grid RowDefinitions="Auto,*">
             
             <!-- Custom Top Bar -->
-            <Border Grid.Row="0" Background="#222" Height="30" PointerPressed="TitleBar_PointerPressed"
+            <Border Grid.Row="0" Background="{DynamicResource PrimaryBrush}" Height="30" PointerPressed="TitleBar_PointerPressed"
                     CornerRadius="12,12,0,0" ClipToBounds="True">
                 <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6">
                         <TextBlock Text="QuicShare" Foreground="White" VerticalAlignment="Center" Margin="2,0,0,0"/>
-                        <Image Source="/Assets/avalonia-logo.ico" Width="16" Height="16" VerticalAlignment="Center" Margin="6,0"/>
+                        <Border>
+                        <!-- <Image Source="avares://QuicFileSharing.GUI/Assets/icon.png" Width="16" Height="16" VerticalAlignment="Center" Margin="6,0"/> -->
+                        </Border>
                     </StackPanel>
 
                     <!-- Minimize button -->

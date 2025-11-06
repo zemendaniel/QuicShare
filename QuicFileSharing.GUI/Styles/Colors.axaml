@@ -1,0 +1,17 @@
+<Style xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Style.Resources>
+        <Color x:Key="PrimaryColor">#14B8A6</Color>
+        <Color x:Key="SecondaryColor">#121212</Color>
+        <Color x:Key="AccentColor">#8B5CF6</Color>
+        <Color x:Key="TextColor">#F1F5F9</Color>
+        <Color x:Key="SuccessColor">#34D399</Color>
+
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
+        <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
+        <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+        <SolidColorBrush x:Key="TextBrush" Color="{DynamicResource TextColor}" />
+        <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
+    </Style.Resources>
+</Style>
