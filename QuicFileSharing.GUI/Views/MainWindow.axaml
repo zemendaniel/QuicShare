@@ -32,7 +32,7 @@
         
         <Grid RowDefinitions="Auto,*">
             
-            <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="True">
                 <!-- First wave -->
                 <Path Fill="{DynamicResource TextBrush}" Opacity="0.2"
                       Data="M0,389 C225,333 450,444 900,356 L900,500 L0,500 Z"/>
@@ -152,6 +152,7 @@
         </TextBlock>
         <Button Content="Settings" Command="{Binding OpenSettingsCommand}" 
                 HorizontalAlignment="Center" Padding="12,6"
+                FontWeight="Bold"
                 CornerRadius="12" Foreground="{DynamicResource TextBrush}" 
                 Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource AccentBrush}"/>
     </StackPanel>
