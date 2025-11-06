@@ -69,7 +69,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task CheckQuicSupportAsync(Window window)
     {
-        if (!QuicListener.IsSupported || !QuicConnection.IsSupported) 
+        // if (!QuicListener.IsSupported || !QuicConnection.IsSupported) 
+        if (false) // todo remove 
         {
             var msgBox = MessageBoxManager
                 .GetMessageBoxStandard(

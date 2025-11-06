@@ -27,15 +27,23 @@
     </Design.DataContext>
 
     <!-- Outer border with rounded corners and shadow -->
-    <Border Background="{DynamicResource SecondaryBrush}" CornerRadius="12" BorderThickness="0" Padding="0">
+    <Border CornerRadius="12" BorderThickness="0" Padding="0" Background="{DynamicResource SecondaryColor}">
+        
         <Grid RowDefinitions="Auto,*">
             
+            <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <Path Fill="{DynamicResource TextBrush}" Opacity="0.2"
+                      Data="M0,350 C200,300 400,400 800,320 L800,450 L0,450 Z"/>
+                <Path Fill="{DynamicResource TextBrush}" Opacity="0.1"
+                      Data="M0,380 C250,330 550,420 800,350 L800,450 L0,450 Z"/>
+            </Canvas>
+            
             <!-- Custom Top Bar -->
-            <Border Grid.Row="0" Background="{DynamicResource PrimaryBrush}" Height="30" PointerPressed="TitleBar_PointerPressed"
+            <Border Grid.Row="0" Background="{DynamicResource PrimaryColor}" Height="30" PointerPressed="TitleBar_PointerPressed"
                     CornerRadius="12,12,0,0" ClipToBounds="True">
                 <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6">
-                        <TextBlock Text="QuicShare" Foreground="White" VerticalAlignment="Center" Margin="2,0,0,0"/>
+                        <TextBlock Text="QuicShare" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
                         <Border>
                         <!-- <Image Source="avares://QuicFileSharing.GUI/Assets/icon.png" Width="16" Height="16" VerticalAlignment="Center" Margin="6,0"/> -->
                         </Border>
@@ -46,10 +54,10 @@
                             VerticalAlignment="Center" HorizontalAlignment="Center"
                             Background="Transparent" BorderBrush="Transparent"
                             Click="MinimizeButtonClick">
-                        <TextBlock Text="-" FontSize="16" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="-" FontSize="16" Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Button.Styles>
                             <Style Selector="Button:hover">
-                                <Setter Property="Background" Value="#444"/>
+                                <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
                             </Style>
                         </Button.Styles>
                     </Button>
@@ -60,10 +68,10 @@
                             Background="Transparent" BorderBrush="Transparent"
                             Padding="2, 0, 2, 0"
                             Click="CloseButton_Click">
-                        <TextBlock Text="X" FontSize="16" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="X" FontSize="16" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <Button.Styles>
                             <Style Selector="Button:hover">
-                                <Setter Property="Background" Value="#444"/>
+                                <Setter Property="Background" Value="{DynamicResource TextBrush}"/>
                             </Style>
                         </Button.Styles>
                     </Button>

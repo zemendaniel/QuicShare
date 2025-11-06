@@ -2,11 +2,11 @@
        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Style.Resources>
-        <Color x:Key="PrimaryColor">#14B8A6</Color>
-        <Color x:Key="SecondaryColor">#121212</Color>
-        <Color x:Key="AccentColor">#8B5CF6</Color>
-        <Color x:Key="TextColor">#F1F5F9</Color>
-        <Color x:Key="SuccessColor">#34D399</Color>
+        <Color x:Key="PrimaryColor">#22469D</Color>
+        <Color x:Key="SecondaryColor">#4472ca</Color>
+        <Color x:Key="AccentColor">#5e7ce2</Color>
+        <Color x:Key="TextColor">#cfdee7</Color>
+        <Color x:Key="SuccessColor">#92b4f4</Color>
 
         <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
         <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
