@@ -90,7 +90,7 @@
             <!-- Content Area -->
             <Grid Grid.Row="1" Margin="20" ZIndex="2">
                 <!-- Lobby -->
-<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
             IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}"
             Spacing="20" Width="400">
 
@@ -161,18 +161,50 @@
                 Background="{DynamicResource PrimaryBrush}" BorderBrush="{DynamicResource AccentBrush}"/>
     </StackPanel>
 </StackPanel>
-
-
+                
                 <!-- WaitingForConnection -->
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
-                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.WaitingForConnection}}">
-                    <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8" TextAlignment="Center" Padding="10,5">Share this code with your peer:</TextBlock>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,8">
-                        <SelectableTextBlock Text="{Binding RoomCode}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <Button Content="Copy to clipboard" Command="{Binding CopyRoomCodeCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
-                    </StackPanel>
-                    <TextBlock FontWeight="Light" TextAlignment="Center" FontSize="12">Waiting for incoming connection...</TextBlock>
-                </StackPanel>
+<StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.WaitingForConnection}}"
+            Spacing="20" Width="400">
+
+    <!-- Header -->
+    <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10"
+            Effect="{DynamicResource DropShadow}">
+        <TextBlock Foreground="{DynamicResource TextBrush}" 
+                   FontWeight="SemiBold" FontSize="24" TextAlignment="Center">
+            Share this code with your peer:
+        </TextBlock>
+    </Border>
+
+    <!-- Room Code Display -->
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+        <Border CornerRadius="12" Background="{DynamicResource TextBrush}" Padding="8,4">
+            <SelectableTextBlock Text="{Binding RoomCode}" 
+                                 FontWeight="Bold"
+                                 FontSize="18"
+                                 Foreground="{DynamicResource PrimaryBrush}"
+                                 VerticalAlignment="Center"
+                                 TextAlignment="Center"
+                                 Margin="0,0,4,0"/>
+        </Border>
+
+        <Button Content="Copy to clipboard"
+                Command="{Binding CopyRoomCodeCommand}" 
+                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                Padding="12,6"
+                CornerRadius="12"
+                Foreground="{DynamicResource TextBrush}" 
+                FontWeight="Bold"
+                Background="{DynamicResource PrimaryBrush}" 
+                BorderBrush="{DynamicResource AccentBrush}"/>
+    </StackPanel>
+
+    <!-- Waiting Message -->
+    <TextBlock FontWeight="Light" TextAlignment="Center" FontSize="14"
+               Foreground="{DynamicResource TextBrush}" 
+               Text="Waiting for incoming connection..."/>
+</StackPanel>
+
 
                 <!-- InRoom -->
                 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
