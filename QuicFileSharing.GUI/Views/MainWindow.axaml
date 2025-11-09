@@ -30,22 +30,11 @@
 
     <Border CornerRadius="12" BorderThickness="0" Padding="0" Background="{DynamicResource SecondaryColor}">
         
-        <Grid RowDefinitions="Auto,*">
-            
-            <Canvas HorizontalAlignment="Stretch" VerticalAlignment="Stretch" ClipToBounds="True">
-                <!-- First wave -->
-                <Path Fill="{DynamicResource TextBrush}" Opacity="0.2"
-                      Data="M0,389 C225,333 450,444 900,356 L900,500 L0,500 Z"/>
-    
-                <!-- Second wave -->
-                <Path Fill="{DynamicResource TextBrush}" Opacity="0.1"
-                      Data="M0,422 C281,367 619,467 900,389 L900,500 L0,500 Z"/>
-            </Canvas>
-
+        <Grid RowDefinitions="*,Auto">
             
             <!-- Custom Top Bar -->
             <Border Grid.Row="0" Background="{DynamicResource PrimaryColor}" Height="30" PointerPressed="TitleBar_PointerPressed"
-                    CornerRadius="12,12,0,0" ClipToBounds="True">
+                    CornerRadius="12,12,0,0" ClipToBounds="True" VerticalAlignment="Top">
                 <Grid ColumnDefinitions="*,Auto,Auto,Auto">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6">
                         <TextBlock Text="QuicShare" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center" Margin="2,0,0,0"/>
@@ -82,10 +71,18 @@
                     </Button>
                 </Grid>
             </Border>
-
+            
+            <Grid Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" ZIndex="1">
+                <Path Fill="{DynamicResource TextBrush}" Opacity="0.2"
+                      Data="M0,389 C225,333 450,444 900,356 L900,500 L0,500 Z"
+                      Stretch="Fill"/>
+                <Path Fill="{DynamicResource TextBrush}" Opacity="0.1"
+                      Data="M0,422 C281,367 619,467 900,389 L900,500 L0,500 Z"
+                      Stretch="Fill"/>
+            </Grid>
 
             <!-- Content Area -->
-            <Grid Grid.Row="1" Margin="20">
+            <Grid Grid.Row="1" Margin="20" ZIndex="2">
                 <!-- Lobby -->
 <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
             IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}"
