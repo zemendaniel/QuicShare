@@ -22,6 +22,11 @@
     <Window.Resources>
         <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        
+        <DropShadowEffect x:Key="DropShadow"
+                          BlurRadius="8"
+                          Opacity="0.5"
+                          Color="Black"/>
     </Window.Resources>
 
     <Design.DataContext>
@@ -89,7 +94,8 @@
             Spacing="20" Width="400">
 
     <!-- Header -->
-    <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10">
+    <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10"
+            Effect="{DynamicResource DropShadow}">
         <TextBlock Foreground="{DynamicResource TextBrush}" 
                    FontWeight="SemiBold" FontSize="24" TextAlignment="Center">
             What would you like to do?
