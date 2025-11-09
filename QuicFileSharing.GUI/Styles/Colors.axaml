@@ -8,6 +8,8 @@
         <Color x:Key="TextColor">#cfdee7</Color>
         <Color x:Key="SuccessColor">#92b4f4</Color>
         <Color x:Key="InputColor">#2FDDF4</Color>
+        <Color x:Key="DarkShadow">DarkBlue</Color>
+        <Color x:Key="LightShadow">DarkSlateGray</Color>
 
         <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
         <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />

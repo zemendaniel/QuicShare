@@ -24,9 +24,14 @@
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
         
         <DropShadowEffect x:Key="DropShadow"
-                          BlurRadius="8"
+                          BlurRadius="16"
                           Opacity="0.5"
-                          Color="Black"/>
+                          Color="{DynamicResource DarkShadow}"/>
+        
+        <DropShadowEffect x:Key="TextShadow"
+                          BlurRadius="4"
+                          Opacity="0.2"
+                          Color="{DynamicResource LightShadow}"/>
     </Window.Resources>
 
     <Design.DataContext>
@@ -254,30 +259,59 @@
                     </StackPanel>
 
                     <!-- InRoom -->
-                    <StackPanel
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}">
-                        <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8"
-                                   TextAlignment="Center" Padding="10,5"
-                                   Text="{Binding RoomCode, StringFormat='You are in room: {0}'}"/>
-                        <Button Content="Send File"
-                                Command="{Binding SendFileCommand}"
-                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
-                                Padding="12,6"
-                                HorizontalAlignment="Center"
-                                IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
-                        <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20"
-                                   IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}">
-                            You are open to receiving files.
-                        </TextBlock>
-                        <TextBlock Text="{Binding RoomText}" TextAlignment="Center"/>
-                        <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center"/>
-                        <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400">
-                            <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercentage}" Height="20"/>
-                            <TextBlock Text="{Binding ProgressText}" FontWeight="Bold"/>
+                        <StackPanel
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Spacing="20"
+                            Width="400"
+                            IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}">
+
+                            <!-- Header -->
+                            <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10"
+                                    Effect="{DynamicResource DropShadow}">
+                                <TextBlock Text="{Binding RoomCode, StringFormat='You Are In Room: {0}'}"
+                                           FontWeight="SemiBold"
+                                           FontSize="24"
+                                           Foreground="{DynamicResource TextBrush}"
+                                           TextAlignment="Center"/>
+                            </Border>
+
+                            <!-- Send File Button -->
+                            <Button Content="Send File"
+                                    Command="{Binding SendFileCommand}"
+                                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                                    Padding="12,6"
+                                    HorizontalAlignment="Center"
+                                    CornerRadius="12"
+                                    Foreground="{DynamicResource TextBrush}"
+                                    FontWeight="Bold"
+                                    Background="{DynamicResource PrimaryBrush}"
+                                    BorderBrush="{DynamicResource AccentBrush}"
+                                    IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
+
+                            <!-- Receiving Status -->
+                            <TextBlock FontWeight="Bold" FontSize="16" TextAlignment="Center" Margin="0,0,0,20"
+                                       IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"
+                                       Foreground="{DynamicResource TextBrush}">
+                                You are open to receiving files.
+                            </TextBlock>
+
+                            <!-- Room Info -->
+                            <TextBlock Text="{Binding RoomText}" TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
+                                       FontSize="16"
+                                       FontWeight="SemiBold"
+                                       Effect="{DynamicResource TextShadow}"/>
+                            <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+
+                            <!-- Progress Section -->
+                            <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400"
+                                        IsVisible="{Binding IsProgressVisible}"
+                                        Effect="{DynamicResource DropShadow}">
+                                <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercentage}" Height="20"/>
+                                <TextBlock Text="{Binding ProgressText}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" TextAlignment="Center"/>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+
 
                     <!-- Settings -->
                     <StackPanel

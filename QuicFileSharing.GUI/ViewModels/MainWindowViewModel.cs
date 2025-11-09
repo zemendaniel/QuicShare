@@ -25,7 +25,7 @@ namespace QuicFileSharing.GUI.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private AppState state = AppState.WaitingForConnection; // todo change to lobby
+    private AppState state = AppState.InRoom; // todo change to lobby
     [ObservableProperty]
     private string roomCode = string.Empty;
     [ObservableProperty]
@@ -35,7 +35,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string lobbyText = string.Empty;
     [ObservableProperty]
-    private string roomText = string.Empty;
+    private string roomText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."; // todo remove
     [ObservableProperty]
     private double progressPercentage; 
     [ObservableProperty]
@@ -55,7 +55,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool isTransferInProgress;
     [ObservableProperty]
-    private string filePath = string.Empty;    
+    private string filePath = string.Empty;   
+    [ObservableProperty]
+    private bool isProgressVisible;
     
     private readonly AppConfig appConfig = DataStore.Load();
     private CancellationTokenSource cts;
@@ -385,7 +387,10 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsTransferInProgress = peer.IsTransferInProgress;
             if (IsTransferInProgress)
+            {
                 RoomText = "";
+                IsProgressVisible = true;
+            }
         };
     }
 
