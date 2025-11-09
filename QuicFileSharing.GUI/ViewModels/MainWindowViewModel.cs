@@ -25,7 +25,7 @@ namespace QuicFileSharing.GUI.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private AppState state = AppState.Lobby;
+    private AppState state = AppState.WaitingForConnection; // todo change to lobby
     [ObservableProperty]
     private string roomCode = string.Empty;
     [ObservableProperty]
