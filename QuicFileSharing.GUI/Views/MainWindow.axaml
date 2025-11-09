@@ -33,7 +33,8 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <Border CornerRadius="12" BorderThickness="0" Padding="0" Background="{DynamicResource SecondaryColor}">
+    <Border CornerRadius="12" BorderThickness="0" Padding="0" Background="{DynamicResource SecondaryColor}"
+            ClipToBounds="True">
         
         <Grid RowDefinitions="*,Auto">
             
