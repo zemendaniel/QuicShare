@@ -336,40 +336,122 @@
                         </StackPanel>
 
 
-                    <!-- Settings -->
-                    <StackPanel
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}">
-                        <TextBlock FontWeight="SemiBold" FontSize="24" Margin="0,0,0,8"
-                                   TextAlignment="Center" Padding="10,5">
-                            Settings
-                        </TextBlock>
-                        <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Margin="0,0,0,20">
-                            Leave empty and save to use default values.
-                        </TextBlock>
-                        <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Margin="0,0,0,12"/>
-                        <TextBlock Margin="0,0,0,8">IPv4 port (1-65535) (if Force IPv4 is enabled):</TextBlock>
-                        <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
-                                       Increment="1" FormatString="0" Margin="0,0,0,16"
-                                       IsEnabled="{Binding ForceIPv4}"/>
-                        <TextBlock Margin="0,0,0,8">Signaling Server:</TextBlock>
-                        <TextBox Text="{Binding SignalingServerText}" Margin="0,0,0,16"/>
-                        <TextBlock Margin="0,0,0,8">IPv6 echo API:</TextBlock>
-                        <TextBox Text="{Binding ApiV6Text}" Margin="0,0,0,16"/>
-                        <TextBlock Margin="0,0,0,8">IPv4 echo API:</TextBlock>
-                        <TextBox Text="{Binding ApiV4Text}" Margin="0,0,0,16"/>
-                        <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center"
-                                   Margin="0,0,0,20" TextWrapping="Wrap" MaxWidth="500">
-                            If you are using your own APIs, make sure that they are working and are accessible.
-                            Also make sure that you and your peer are using the same signaling server.
-                        </TextBlock>
-                        <TextBlock Text="{Binding SettingsText}" MaxWidth="500" TextWrapping="Wrap"/>
-                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                            <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}"/>
-                            <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}"/>
-                        </StackPanel>
-                    </StackPanel>
+                   <!-- Settings -->
+<!-- Settings -->
+<StackPanel
+    VerticalAlignment="Center"
+    HorizontalAlignment="Center"
+    Spacing="16"
+    IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Settings}}">
+
+    <!-- Header -->
+    <Border CornerRadius="12"
+            Background="{DynamicResource PrimaryBrush}"
+            Padding="10"
+            Width="175"
+            Effect="{DynamicResource DropShadow}">
+        <TextBlock Foreground="{DynamicResource TextBrush}"
+                   FontWeight="SemiBold"
+                   FontSize="24"
+                   TextAlignment="Center">
+            Settings
+        </TextBlock>
+    </Border>
+
+    <!-- Info Text -->
+    <TextBlock FontWeight="Bold" FontSize="14" TextAlignment="Center" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap"
+               Effect="{DynamicResource TextShadow}">
+        Leave empty and save to use default values.
+    </TextBlock>
+
+    <!-- First row: Force IPv4 and Port -->
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="50">
+        <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Foreground="{DynamicResource TextBrush}"
+                  Effect="{DynamicResource TextShadow}"
+                  FontWeight="Bold"
+                  VerticalAlignment="Center"
+                  CornerRadius="6"
+                  BorderBrush="{DynamicResource PrimaryBrush}"/>
+
+        <StackPanel>
+            <TextBlock Foreground="{DynamicResource TextBrush}"
+                       Effect="{DynamicResource TextShadow}"
+                       Margin="0, 0, 0, 6"
+                       FontWeight="Bold">IPv4 port (1-65535):</TextBlock>
+            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
+                           Increment="1" FormatString="0"
+                           IsEnabled="{Binding ForceIPv4}"
+                           FontWeight="Bold"
+                           ClipToBounds="True"
+                           Foreground="{DynamicResource PrimaryBrush}" 
+                           Background="{DynamicResource TextBrush}" 
+                           CornerRadius="12" Padding="12,6" Width="140">
+                <NumericUpDown.Styles>
+                    <!-- todo here -->
+                </NumericUpDown.Styles>
+            </NumericUpDown>
+        </StackPanel>
+    </StackPanel>
+
+    <!-- Second row: APIs -->
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
+        <StackPanel>
+            <TextBlock Foreground="{DynamicResource TextBrush}">Signaling Server:</TextBlock>
+            <TextBox Text="{Binding SignalingServerText}" 
+                     Foreground="{DynamicResource TextBrush}" 
+                     Background="{DynamicResource PrimaryBrush}" 
+                     BorderBrush="{DynamicResource AccentBrush}" 
+                     CornerRadius="12" Padding="8,4" Width="200"
+                     Effect="{DynamicResource DropShadow}"/>
+        </StackPanel>
+
+        <StackPanel>
+            <TextBlock Foreground="{DynamicResource TextBrush}">IPv6 echo API:</TextBlock>
+            <TextBox Text="{Binding ApiV6Text}" 
+                     Foreground="{DynamicResource TextBrush}" 
+                     Background="{DynamicResource PrimaryBrush}" 
+                     BorderBrush="{DynamicResource AccentBrush}" 
+                     CornerRadius="12" Padding="8,4" Width="200"
+                     Effect="{DynamicResource DropShadow}"/>
+        </StackPanel>
+
+        <StackPanel>
+            <TextBlock Foreground="{DynamicResource TextBrush}">IPv4 echo API:</TextBlock>
+            <TextBox Text="{Binding ApiV4Text}" 
+                     Foreground="{DynamicResource TextBrush}" 
+                     Background="{DynamicResource PrimaryBrush}" 
+                     BorderBrush="{DynamicResource AccentBrush}" 
+                     CornerRadius="12" Padding="8,4" Width="200"
+                     Effect="{DynamicResource DropShadow}"/>
+        </StackPanel>
+    </StackPanel>
+
+    <!-- Info text -->
+    <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" MaxWidth="880">
+        If you are using your own APIs, make sure that they are working and are accessible.
+        Also make sure that you and your peer are using the same signaling server.
+    </TextBlock>
+
+    <TextBlock Text="{Binding SettingsText}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" MaxWidth="880"/>
+
+    <!-- Action Buttons -->
+    <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+        <Button Content="Exit and save" Command="{Binding SaveSettingsCommand}" 
+                Foreground="{DynamicResource TextBrush}" 
+                Background="{DynamicResource PrimaryBrush}" 
+                BorderBrush="{DynamicResource AccentBrush}" 
+                Padding="12,6" CornerRadius="12" FontWeight="Bold"
+                Effect="{DynamicResource DropShadow}"/>
+        <Button Content="Exit without saving" Command="{Binding CloseSettingsCommand}" 
+                Foreground="{DynamicResource TextBrush}" 
+                Background="{DynamicResource PrimaryBrush}" 
+                BorderBrush="{DynamicResource AccentBrush}" 
+                Padding="12,6" CornerRadius="12" FontWeight="Bold"
+                Effect="{DynamicResource DropShadow}"/>
+    </StackPanel>
+</StackPanel>
+
+
                 </Grid>
             </Grid>
         </Grid>
