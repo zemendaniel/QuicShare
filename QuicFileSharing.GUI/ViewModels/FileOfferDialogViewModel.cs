@@ -26,7 +26,7 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     public FileOfferDialogViewModel(string fileName, long fileSize, string savePath)
     {
         this.fileSize = fileSize;
-        Message = $"Incoming file: {fileName} ({FormatBytes(fileSize)})";
+        Message = $"{fileName} ({FormatBytes(fileSize)})";
         SavePath = savePath;
     }
     [RelayCommand]

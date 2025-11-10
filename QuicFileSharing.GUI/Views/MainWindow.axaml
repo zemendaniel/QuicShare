@@ -246,7 +246,7 @@
                         <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10"
                                 Effect="{DynamicResource DropShadow}">
                             <TextBlock Foreground="{DynamicResource TextBrush}"
-                                       FontWeight="SemiBold" FontSize="24" TextAlignment="Center">
+                                       FontWeight="SemiBold" FontSize="24" TextAlignment="Center" VerticalAlignment="Center">
                                 Share This Code With Your Peer
                             </TextBlock>
                         </Border>
@@ -284,12 +284,13 @@
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Spacing="20"
-                            Width="400"
+                            Width="600"
                             IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.InRoom}}">
 
                             <!-- Header -->
                             <Border CornerRadius="12" Background="{DynamicResource PrimaryBrush}" Padding="10"
-                                    Effect="{DynamicResource DropShadow}">
+                                    Effect="{DynamicResource DropShadow}"
+                                    Width="400">
                                 <TextBlock Text="{Binding RoomCode, StringFormat='You Are In Room: {0}'}"
                                            FontWeight="SemiBold"
                                            FontSize="24"
@@ -324,7 +325,8 @@
                                        Effect="{DynamicResource TextShadow}"
                                        TextWrapping="Wrap"
                                        MaxWidth="400"/>
-                            <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
+                            <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
+                                                 TextWrapping="Wrap"/>
 
                             <!-- Progress Section -->
                             <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400"

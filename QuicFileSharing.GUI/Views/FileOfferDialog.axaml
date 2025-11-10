@@ -1,90 +1,205 @@
 ﻿<Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="QuicFileSharing.GUI.Views.FileOfferDialog"
         xmlns:vm="using:QuicFileSharing.GUI.ViewModels"
-        Title="Incoming File"
-        Width="400" Height="220"
-        WindowStartupLocation="CenterOwner"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:converters="clr-namespace:QuicFileSharing.GUI.Converters"
+        mc:Ignorable="d"
+        x:Class="QuicFileSharing.GUI.Views.FileOfferDialog"
         x:DataType="vm:FileOfferDialogViewModel"
+        Icon="avares://QuicFileSharing.GUI/Assets/icon.png"
+        Title="Incoming File"
+        Width="400"
+        Height="280"
         CanResize="False"
-        Background="Transparent">
+        Background="Transparent"
+        WindowStartupLocation="CenterOwner"
+        SystemDecorations="None">
 
-    <!-- Outer Border for background and rounded corners -->
-    <Border Background="{DynamicResource AccentBrush}"
-            CornerRadius="12"
-            Padding="16"
-            Effect="{DynamicResource DropShadow}">
+    <Window.Resources>
+        <converters:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+        <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
         
-        <StackPanel Spacing="16">
-            <!-- Message -->
-            <TextBlock Text="{Binding Message}" 
-                       TextWrapping="Wrap" 
-                       TextAlignment="Center"
-                       FontWeight="SemiBold" 
-                       FontSize="18" 
-                       Foreground="{DynamicResource TextBrush}" 
-                       Effect="{DynamicResource TextShadow}" 
-                       Margin="0,0,0,12"/>
-            
-            <!-- Save Folder -->
-            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="8">
-                <TextBlock Text="Save Folder"
-                           FontWeight="Bold"
-                           FontSize="14"
-                           Foreground="{DynamicResource TextBrush}" 
-                           VerticalAlignment="Center"/>
-                
-                <Border Background="{DynamicResource SecondaryColor}" 
-                        BorderBrush="{DynamicResource AccentBrush}" 
-                        BorderThickness="1" 
-                        CornerRadius="8">
-                    <SelectableTextBlock Padding="6" 
-                                         Text="{Binding SavePath}" 
-                                         TextAlignment="Center" 
-                                         VerticalAlignment="Center" 
-                                         Foreground="{DynamicResource TextBrush}"/>
-                </Border>
-                
-                <Button Content="Browse..." 
-                        Command="{Binding SelectFolderCommand}"
-                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
-                        Padding="10,6"
-                        CornerRadius="12"
-                        Background="{DynamicResource PrimaryBrush}"
-                        BorderBrush="{DynamicResource AccentBrush}"
-                        Foreground="{DynamicResource TextBrush}"
-                        FontWeight="Bold"
-                        Effect="{DynamicResource TextShadow}"/>
-            </StackPanel>
+        <DropShadowEffect x:Key="DropShadow"
+                          BlurRadius="23"
+                          Opacity="0.5"
+                          Color="{DynamicResource DarkShadow}"/>
+        
+        <DropShadowEffect x:Key="TextShadow"
+                          BlurRadius="4"
+                          Opacity="0.15"
+                          Color="{DynamicResource DarkShadow}"/>
+    </Window.Resources>
+    
+    <Border CornerRadius="12"
+            BorderThickness="0"
+            Background="{DynamicResource SuccessBrush}"
+            ClipToBounds="True">
 
-            <!-- Action Buttons -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
-                <Button Content="Reject" 
-                        Command="{Binding RejectCommand}"
-                        Padding="10,6"
-                        CornerRadius="12"
-                        Background="{DynamicResource PrimaryBrush}"
-                        BorderBrush="{DynamicResource AccentBrush}"
-                        Foreground="{DynamicResource TextBrush}"
-                        FontWeight="Bold"
-                        Effect="{DynamicResource TextShadow}"/>
-                
-                <Button Content="Accept" 
-                        Command="{Binding AcceptCommand}"
-                        Padding="10,6"
-                        CornerRadius="12"
-                        Background="{DynamicResource PrimaryBrush}"
-                        BorderBrush="{DynamicResource AccentBrush}"
-                        Foreground="{DynamicResource TextBrush}"
-                        FontWeight="Bold"
-                        Effect="{DynamicResource TextShadow}"/>
-            </StackPanel>
+        <Grid RowDefinitions="Auto,*">
 
-            <!-- Error Text -->
-            <TextBlock Text="{Binding ErrorText}" 
-                       TextWrapping="Wrap" 
-                       Foreground="{DynamicResource TextBrush}" 
-                       FontWeight="SemiBold"/>
-        </StackPanel>
+            <!-- Custom Top Bar -->
+            <Border Grid.Row="0"
+                    Background="{DynamicResource AccentBrush}"
+                    Height="30"
+                    PointerPressed="TitleBar_PointerPressed"
+                    CornerRadius="12,12,0,0"
+                    VerticalAlignment="Top"
+                    ClipToBounds="True">
+                <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6"
+                                Effect="{DynamicResource DropShadow}">
+                        <TextBlock Text="Incoming File"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   VerticalAlignment="Center"
+                                   Effect="{DynamicResource TextShadow}"/>
+                    </StackPanel>
+
+                    <!-- Close Button -->
+                    <Button Grid.Column="1"
+                            Width="28"
+                            Height="28"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Background="Transparent"
+                            BorderBrush="Transparent"
+                            Padding="5, 4, 0, 0"
+                            Margin="0,0,4,0"
+                            Click="CloseButton_Click">
+                        <Path Data="M0,0 L12,12 M12,0 L0,12"
+                              Stroke="{DynamicResource TextBrush}"
+                              StrokeThickness="2"
+                              Stretch="Uniform"
+                              RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform>
+                                <ScaleTransform ScaleX="0.7" ScaleY="0.7"/>
+                            </Path.RenderTransform>
+                        </Path>
+                        <Button.Styles>
+                            <Style Selector="Button:hover">
+                                <Setter Property="Background" Value="{DynamicResource TextBrush}"/>
+                            </Style>
+                        </Button.Styles>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- Main Content -->
+            <Grid Grid.Row="1" ClipToBounds="True">
+                <!-- ~1~ Decorative Waves @1@ -->
+                <!-- <Grid VerticalAlignment="Bottom" ZIndex="0"> -->
+                <!--     <Path Fill="{DynamicResource TextBrush}" Opacity="0.2" -->
+                <!--           Data="M0,189 C100,150 300,220 400,160 L400,280 L0,280 Z" -->
+                <!--           Stretch="Fill"/> -->
+                <!--     <Path Fill="{DynamicResource TextBrush}" Opacity="0.1" -->
+                <!--           Data="M0,210 C150,180 280,230 400,200 L400,280 L0,280 Z" -->
+                <!--           Stretch="Fill"/> -->
+                <!-- </Grid> -->
+
+                <!-- Foreground Content -->
+                <StackPanel ZIndex="1" Margin="20" Spacing="16"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"
+                            Width="360">
+
+                    <!-- ~1~ Title @1@ -->
+                    <!-- <Border CornerRadius="12" -->
+                    <!--         Background="{DynamicResource AccentBrush}" -->
+                    <!--         Padding="10" -->
+                    <!--         Effect="{DynamicResource DropShadow}" -->
+                    <!--         Width="200" -->
+                    <!--         HorizontalAlignment="Center"> -->
+                    <!--     <TextBlock Text="Incoming File" -->
+                    <!--                FontWeight="SemiBold" -->
+                    <!--                FontSize="24" -->
+                    <!--                Foreground="{DynamicResource TextBrush}" -->
+                    <!--                Effect="{DynamicResource DropShadow}" -->
+                    <!--                TextAlignment="Center"/> -->
+                    <!-- </Border> -->
+
+                    <!-- Message -->
+                    <Border CornerRadius="12"
+                            Background="{DynamicResource TextBrush}"
+                            Padding="12"
+                            Opacity="0.95"
+                            Effect="{DynamicResource DropShadow}"
+                            HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Message}"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   FontWeight="Bold"
+                                   FontSize="16"
+                                   Foreground="{DynamicResource PrimaryBrush}"/>
+                    </Border>
+
+                    <!-- Save Folder -->
+                    <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="8">
+                        <TextBlock Text="Save Folder"
+                                   FontWeight="Bold"
+                                   FontSize="14"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   TextAlignment="Center"
+                                   Effect="{DynamicResource DropShadow}"/>
+
+                        <Border Background="{DynamicResource TextBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                Effect="{DynamicResource TextShadow}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <SelectableTextBlock Padding="6"
+                                                 Text="{Binding SavePath}"
+                                                 TextAlignment="Center"
+                                                 VerticalAlignment="Center"
+                                                 Foreground="{DynamicResource PrimaryBrush}"/>
+                        </Border>
+
+                        <Button Content="Browse..."
+                                Command="{Binding SelectFolderCommand}"
+                                CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                                Padding="10,6"
+                                CornerRadius="12"
+                                HorizontalAlignment="Center"
+                                Background="{DynamicResource AccentBrush}"
+                                Foreground="{DynamicResource TextBrush}"
+                                FontWeight="Bold"
+                                Effect="{DynamicResource TextShadow}"/>
+                    </StackPanel>
+                    <!-- Error Text -->
+                    <TextBlock Text="{Binding ErrorText}"
+                               TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextBrush}"
+                               FontWeight="SemiBold"
+                               TextAlignment="Center"
+                               Effect="{DynamicResource TextShadow}"
+                               MaxWidth="360"/>
+                    <!-- Action Buttons -->
+                    <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center"
+                                Spacing="12">
+                        <Button Content="Reject"
+                                Command="{Binding RejectCommand}"
+                                Padding="10,6"
+                                CornerRadius="12"
+                                Background="{DynamicResource PrimaryBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                Foreground="{DynamicResource TextBrush}"
+                                FontWeight="Bold"
+                                Effect="{DynamicResource TextShadow}"/>
+
+                        <Button Content="Accept"
+                                Command="{Binding AcceptCommand}"
+                                Padding="10,6"
+                                CornerRadius="12"
+                                Background="{DynamicResource PrimaryBrush}"
+                                BorderBrush="{DynamicResource AccentBrush}"
+                                Foreground="{DynamicResource TextBrush}"
+                                FontWeight="Bold"
+                                Effect="{DynamicResource TextShadow}"/>
+                    </StackPanel>
+                    
+                </StackPanel>
+            </Grid>
+        </Grid>
     </Border>
 </Window>

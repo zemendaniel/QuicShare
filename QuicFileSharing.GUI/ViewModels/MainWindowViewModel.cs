@@ -340,7 +340,7 @@ public partial class MainWindowViewModel : ViewModelBase
             DataStore.Save(appConfig);
         }
         peer.SetSendPath(path);
-        FilePath = $"Selected file: {path}";
+        FilePath = $"Selected File:\n{path}";
         await peer.StartSending();
         RoomText = "Waiting for peer to accept file...";
         var status = await peer.FileTransferCompleted!.Task;
