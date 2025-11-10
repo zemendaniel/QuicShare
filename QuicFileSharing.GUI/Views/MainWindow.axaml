@@ -30,7 +30,7 @@
         
         <DropShadowEffect x:Key="TextShadow"
                           BlurRadius="4"
-                          Opacity="0.2"
+                          Opacity="0.15"
                           Color="{DynamicResource DarkShadow}"/>
     </Window.Resources>
 
@@ -50,6 +50,7 @@
             <!-- Custom Top Bar -->
             <Border Grid.Row="0"
                     Background="{DynamicResource PrimaryColor}"
+                    Effect="{DynamicResource TextShadow}"
                     Height="30"
                     PointerPressed="TitleBar_PointerPressed"
                     CornerRadius="12,12,0,0"
@@ -59,6 +60,7 @@
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="6">
                         <TextBlock Text="QuicShare"
                                    FontWeight="Bold"
+                                   Effect="{DynamicResource TextShadow}"
                                    Foreground="{DynamicResource TextBrush}"
                                    VerticalAlignment="Center"
                                    Margin="2,0,0,0"/>
@@ -66,34 +68,45 @@
 
                     <!-- Minimize button -->
                     <Button Grid.Column="2"
+                            Effect="{DynamicResource TextShadow}"
                             Width="28"
                             Height="28"
-                            FontWeight="Bold"
+                            Padding="5, 4, 0, 0"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
                             Background="Transparent"
                             BorderBrush="Transparent"
                             Click="MinimizeButtonClick">
-                        <TextBlock Text="-" FontSize="16" Foreground="{DynamicResource TextBrush}" />
-                        <Button.Styles>
-                            <Style Selector="Button:hover">
-                                <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-                            </Style>
-                        </Button.Styles>
+    
+                        <!-- Vector icon -->
+                        <Path Stroke="{DynamicResource TextBrush}" StrokeThickness="2">
+                            <Path.Data>
+                                <LineGeometry StartPoint="0,9" EndPoint="14,9"/>
+                            </Path.Data>
+                        </Path>
                     </Button>
 
                     <!-- Close button -->
                     <Button Grid.Column="3"
+                            Effect="{DynamicResource TextShadow}"
                             Width="28"
                             Height="28"
-                            FontWeight="Bold"
-                            VerticalAlignment="Center"
+                            VerticalAlignment="Bottom"
                             HorizontalAlignment="Center"
                             Background="Transparent"
                             BorderBrush="Transparent"
-                            Padding="2,0,2,0"
+                            Margin="0, 0, 4, 0"
+                            Padding="5, 4, 0, 0"
                             Click="CloseButton_Click">
-                        <TextBlock Text="X" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" />
+                        <Path Data="M0,0 L12,12 M12,0 L0,12"
+                              Stroke="{DynamicResource TextBrush}"
+                              StrokeThickness="2"
+                              Stretch="Uniform"
+                              RenderTransformOrigin="0.5,0.5">
+                            <Path.RenderTransform>
+                                <ScaleTransform ScaleX="0.7" ScaleY="0.7"/>
+                            </Path.RenderTransform>
+                        </Path>
                         <Button.Styles>
                             <Style Selector="Button:hover">
                                 <Setter Property="Background" Value="{DynamicResource TextBrush}"/>
@@ -144,7 +157,8 @@
                             <TextBlock Foreground="{DynamicResource TextBrush}"
                                        FontWeight="Bold"
                                        FontSize="20"
-                                       TextAlignment="Center">
+                                       TextAlignment="Center"
+                                       Effect="{DynamicResource TextShadow}">
                                 Join Existing Room
                             </TextBlock>
 
@@ -158,7 +172,8 @@
                                          Padding="8,4"
                                          CornerRadius="12"
                                          Background="{DynamicResource TextBrush}"
-                                         Foreground="{DynamicResource PrimaryBrush}">
+                                         Foreground="{DynamicResource PrimaryBrush}"
+                                         Effect="{DynamicResource DropShadow}">
                                     <TextBox.KeyBindings>
                                         <KeyBinding Gesture="Enter" Command="{Binding JoinRoomCommand}"/>
                                     </TextBox.KeyBindings>
@@ -171,13 +186,15 @@
                                         Foreground="{DynamicResource TextBrush}"
                                         FontWeight="Bold"
                                         Background="{DynamicResource PrimaryBrush}"
-                                        BorderBrush="{DynamicResource AccentBrush}"/>
+                                        BorderBrush="{DynamicResource AccentBrush}"
+                                        Effect="{DynamicResource TextShadow}"/>
                             </StackPanel>
                         </StackPanel>
 
                         <!-- Create New Room -->
                         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="10">
-                            <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center">
+                            <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center"
+                                       Effect="{DynamicResource TextShadow}">
                                 Create New Room
                             </TextBlock>
                             <Button Content="Create Room" Command="{Binding CreateRoomCommand}"
@@ -186,7 +203,8 @@
                                     CornerRadius="12"
                                     Foreground="{DynamicResource TextBrush}"
                                     Background="{DynamicResource PrimaryBrush}"
-                                    BorderBrush="{DynamicResource AccentBrush}"/>
+                                    BorderBrush="{DynamicResource AccentBrush}"
+                                    Effect="{DynamicResource TextShadow}"/>
                         </StackPanel>
 
                         <TextBlock Text="{Binding LobbyText}"
@@ -201,7 +219,8 @@
 
                         <!-- Settings -->
                         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="10">
-                            <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center">
+                            <TextBlock Foreground="{DynamicResource TextBrush}" FontWeight="Bold" FontSize="20" TextAlignment="Center"
+                                       Effect="{DynamicResource TextShadow}">
                                 Change Settings
                             </TextBlock>
                             <Button Content="Settings"
@@ -212,7 +231,8 @@
                                     CornerRadius="12"
                                     Foreground="{DynamicResource TextBrush}"
                                     Background="{DynamicResource PrimaryBrush}"
-                                    BorderBrush="{DynamicResource AccentBrush}"/>
+                                    BorderBrush="{DynamicResource AccentBrush}"
+                                    Effect="{DynamicResource TextShadow}"/>
                         </StackPanel>
                     </StackPanel>
 
