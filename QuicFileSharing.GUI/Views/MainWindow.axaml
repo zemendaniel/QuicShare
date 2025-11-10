@@ -24,14 +24,14 @@
         <converters:InverseBoolConverter x:Key="InverseBoolConverter"/>
         
         <DropShadowEffect x:Key="DropShadow"
-                          BlurRadius="16"
+                          BlurRadius="23"
                           Opacity="0.5"
                           Color="{DynamicResource DarkShadow}"/>
         
         <DropShadowEffect x:Key="TextShadow"
                           BlurRadius="4"
                           Opacity="0.2"
-                          Color="{DynamicResource LightShadow}"/>
+                          Color="{DynamicResource DarkShadow}"/>
     </Window.Resources>
 
     <Design.DataContext>
@@ -135,7 +135,7 @@
                                        FontWeight="SemiBold"
                                        FontSize="24"
                                        TextAlignment="Center">
-                                What would you like to do?
+                                What Would You Like To Do?
                             </TextBlock>
                         </Border>
 
@@ -191,10 +191,11 @@
 
                         <TextBlock Text="{Binding LobbyText}"
                                    Foreground="{DynamicResource TextBrush}"
-                                   FontWeight="Bold"
+                                   FontWeight="SemiBold"
                                    FontSize="16"
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"
+                                   Effect="{DynamicResource TextShadow}"
                                    MaxWidth="400"
                                    Margin="0,10,0,10"/>
 
@@ -300,7 +301,9 @@
                             <TextBlock Text="{Binding RoomText}" TextAlignment="Center" Foreground="{DynamicResource TextBrush}"
                                        FontSize="16"
                                        FontWeight="SemiBold"
-                                       Effect="{DynamicResource TextShadow}"/>
+                                       Effect="{DynamicResource TextShadow}"
+                                       TextWrapping="Wrap"
+                                       MaxWidth="400"/>
                             <SelectableTextBlock Text="{Binding FilePath}" TextAlignment="Center" Foreground="{DynamicResource TextBrush}"/>
 
                             <!-- Progress Section -->
