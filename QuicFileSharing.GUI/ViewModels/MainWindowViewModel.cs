@@ -25,7 +25,7 @@ namespace QuicFileSharing.GUI.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private AppState state = AppState.Settings; 
+    private AppState state = AppState.Lobby; 
     [ObservableProperty]
     private string roomCode = string.Empty;
     [ObservableProperty]
@@ -71,8 +71,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public async Task CheckQuicSupportAsync(Window window)
     {
-        // if (!QuicListener.IsSupported || !QuicConnection.IsSupported) 
-        if (false) // todo remove 
+        if (!QuicListener.IsSupported || !QuicConnection.IsSupported) 
         {
             var msgBox = MessageBoxManager
                 .GetMessageBoxStandard(

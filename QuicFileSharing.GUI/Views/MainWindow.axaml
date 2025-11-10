@@ -350,7 +350,7 @@
     <Border CornerRadius="12"
             Background="{DynamicResource PrimaryBrush}"
             Padding="10"
-            Width="175"
+            Width="150"
             Effect="{DynamicResource DropShadow}">
         <TextBlock Foreground="{DynamicResource TextBrush}"
                    FontWeight="SemiBold"
@@ -388,48 +388,56 @@
                            Foreground="{DynamicResource PrimaryBrush}" 
                            Background="{DynamicResource TextBrush}" 
                            CornerRadius="12" Padding="12,6" Width="140">
-                <NumericUpDown.Styles>
-                    <!-- todo here -->
-                </NumericUpDown.Styles>
             </NumericUpDown>
         </StackPanel>
     </StackPanel>
 
     <!-- Second row: APIs -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
-        <StackPanel>
-            <TextBlock Foreground="{DynamicResource TextBrush}">Signaling Server:</TextBlock>
+        <StackPanel Spacing="4">
+            <TextBlock Foreground="{DynamicResource TextBrush}"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center">Signaling Server</TextBlock>
             <TextBox Text="{Binding SignalingServerText}" 
-                     Foreground="{DynamicResource TextBrush}" 
-                     Background="{DynamicResource PrimaryBrush}" 
+                     Foreground="{DynamicResource PrimaryBrush}" 
+                     Background="{DynamicResource TextBrush}" 
                      BorderBrush="{DynamicResource AccentBrush}" 
-                     CornerRadius="12" Padding="8,4" Width="200"
-                     Effect="{DynamicResource DropShadow}"/>
+                     CornerRadius="12" Padding="8,4" 
+                     Effect="{DynamicResource DropShadow}"
+                     FontWeight="Bold"
+                     TextAlignment="Center"/>
         </StackPanel>
 
-        <StackPanel>
-            <TextBlock Foreground="{DynamicResource TextBrush}">IPv6 echo API:</TextBlock>
+        <StackPanel Spacing="4">
+            <TextBlock Foreground="{DynamicResource TextBrush}"
+                       FontWeight="Bold" HorizontalAlignment="Center">IPv6 echo API:</TextBlock>
             <TextBox Text="{Binding ApiV6Text}" 
-                     Foreground="{DynamicResource TextBrush}" 
-                     Background="{DynamicResource PrimaryBrush}" 
+                     Foreground="{DynamicResource PrimaryBrush}" 
+                     Background="{DynamicResource TextBrush}" 
                      BorderBrush="{DynamicResource AccentBrush}" 
-                     CornerRadius="12" Padding="8,4" Width="200"
-                     Effect="{DynamicResource DropShadow}"/>
+                     CornerRadius="12" Padding="8,4" 
+                     Effect="{DynamicResource DropShadow}"
+                     FontWeight="Bold"
+                     TextAlignment="Center"/>
         </StackPanel>
 
-        <StackPanel>
-            <TextBlock Foreground="{DynamicResource TextBrush}">IPv4 echo API:</TextBlock>
+        <StackPanel Spacing="4">
+            <TextBlock Foreground="{DynamicResource TextBrush}"
+                       FontWeight="Bold" TextAlignment="Center">IPv4 echo API:</TextBlock>
             <TextBox Text="{Binding ApiV4Text}" 
-                     Foreground="{DynamicResource TextBrush}" 
-                     Background="{DynamicResource PrimaryBrush}" 
+                     Foreground="{DynamicResource PrimaryBrush}" 
+                     Background="{DynamicResource TextBrush}" 
                      BorderBrush="{DynamicResource AccentBrush}" 
-                     CornerRadius="12" Padding="8,4" Width="200"
-                     Effect="{DynamicResource DropShadow}"/>
+                     CornerRadius="12" Padding="8,4" 
+                     Effect="{DynamicResource DropShadow}"
+                     TextAlignment="Center"
+                     FontWeight="Bold"/>
         </StackPanel>
     </StackPanel>
 
     <!-- Info text -->
-    <TextBlock FontWeight="Light" FontSize="12" TextAlignment="Center" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" MaxWidth="880">
+    <TextBlock FontWeight="SemiBold" FontSize="14" Effect="{DynamicResource TextShadow}"
+               TextAlignment="Center" Foreground="{DynamicResource TextBrush}" TextWrapping="Wrap" MaxWidth="880">
         If you are using your own APIs, make sure that they are working and are accessible.
         Also make sure that you and your peer are using the same signaling server.
     </TextBlock>

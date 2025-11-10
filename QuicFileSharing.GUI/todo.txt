@@ -5,5 +5,8 @@ drag and drop file sending
 make "You are open to receiving files" disappear when you have selected a file
 the progress bar must not appear if you only rejected a file
 change icon
+gh actions
+flatpak
+load settings after saving
 
 pause, resume later, cancel
