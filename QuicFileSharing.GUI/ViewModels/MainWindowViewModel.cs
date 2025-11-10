@@ -25,7 +25,7 @@ namespace QuicFileSharing.GUI.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private AppState state = AppState.Lobby; // todo change to lobby
+    private AppState state = AppState.Settings; 
     [ObservableProperty]
     private string roomCode = string.Empty;
     [ObservableProperty]
@@ -34,8 +34,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private string statusMessage = string.Empty;
     [ObservableProperty]
     private string lobbyText = string.Empty;
-    [ObservableProperty]
-    private string roomText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."; // todo remove
+    [ObservableProperty] 
+    private string roomText = string.Empty;
     [ObservableProperty]
     private double progressPercentage; 
     [ObservableProperty]

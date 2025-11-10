@@ -3,26 +3,88 @@
         x:Class="QuicFileSharing.GUI.Views.FileOfferDialog"
         xmlns:vm="using:QuicFileSharing.GUI.ViewModels"
         Title="Incoming File"
-        Width="400" Height="200"
+        Width="400" Height="220"
         WindowStartupLocation="CenterOwner"
         x:DataType="vm:FileOfferDialogViewModel"
-        CanResize="False">
+        CanResize="False"
+        Background="Transparent">
 
-    <StackPanel Spacing="12" Margin="20">
-        <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontWeight="Bold" Margin="0, 0, 0, 16"/>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-            <TextBlock>Save Folder:</TextBlock>
-            <Border BorderBrush="White" BorderThickness="1">
-                <SelectableTextBlock Padding="6" 
-                                     Text="{Binding SavePath}" TextAlignment="Center" VerticalAlignment="Center"></SelectableTextBlock>
-            </Border>
-            <Button Content="Browse..." Command="{Binding SelectFolderCommand}"
-                    CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"/>
+    <!-- Outer Border for background and rounded corners -->
+    <Border Background="{DynamicResource AccentBrush}"
+            CornerRadius="12"
+            Padding="16"
+            Effect="{DynamicResource DropShadow}">
+        
+        <StackPanel Spacing="16">
+            <!-- Message -->
+            <TextBlock Text="{Binding Message}" 
+                       TextWrapping="Wrap" 
+                       TextAlignment="Center"
+                       FontWeight="SemiBold" 
+                       FontSize="18" 
+                       Foreground="{DynamicResource TextBrush}" 
+                       Effect="{DynamicResource TextShadow}" 
+                       Margin="0,0,0,12"/>
+            
+            <!-- Save Folder -->
+            <StackPanel Orientation="Vertical" HorizontalAlignment="Center" Spacing="8">
+                <TextBlock Text="Save Folder"
+                           FontWeight="Bold"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextBrush}" 
+                           VerticalAlignment="Center"/>
+                
+                <Border Background="{DynamicResource SecondaryColor}" 
+                        BorderBrush="{DynamicResource AccentBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="8">
+                    <SelectableTextBlock Padding="6" 
+                                         Text="{Binding SavePath}" 
+                                         TextAlignment="Center" 
+                                         VerticalAlignment="Center" 
+                                         Foreground="{DynamicResource TextBrush}"/>
+                </Border>
+                
+                <Button Content="Browse..." 
+                        Command="{Binding SelectFolderCommand}"
+                        CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                        Padding="10,6"
+                        CornerRadius="12"
+                        Background="{DynamicResource PrimaryBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        Foreground="{DynamicResource TextBrush}"
+                        FontWeight="Bold"
+                        Effect="{DynamicResource TextShadow}"/>
+            </StackPanel>
+
+            <!-- Action Buttons -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+                <Button Content="Reject" 
+                        Command="{Binding RejectCommand}"
+                        Padding="10,6"
+                        CornerRadius="12"
+                        Background="{DynamicResource PrimaryBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        Foreground="{DynamicResource TextBrush}"
+                        FontWeight="Bold"
+                        Effect="{DynamicResource TextShadow}"/>
+                
+                <Button Content="Accept" 
+                        Command="{Binding AcceptCommand}"
+                        Padding="10,6"
+                        CornerRadius="12"
+                        Background="{DynamicResource PrimaryBrush}"
+                        BorderBrush="{DynamicResource AccentBrush}"
+                        Foreground="{DynamicResource TextBrush}"
+                        FontWeight="Bold"
+                        Effect="{DynamicResource TextShadow}"/>
+            </StackPanel>
+
+            <!-- Error Text -->
+            <TextBlock Text="{Binding ErrorText}" 
+                       TextWrapping="Wrap" 
+                       Foreground="{DynamicResource TextBrush}" 
+                       FontWeight="SemiBold"/>
         </StackPanel>
-        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
-            <Button Content="Reject" Command="{Binding RejectCommand}"/>
-            <Button Content="Accept" Command="{Binding AcceptCommand}"/>
-        </StackPanel>
-        <TextBlock Text="{Binding ErrorText}" TextWrapping="Wrap"></TextBlock>
-    </StackPanel>
+    </Border>
 </Window>
