@@ -73,7 +73,7 @@ public abstract class QuicPeer
     private static readonly TimeSpan timeoutCheckInterval = TimeSpan.FromSeconds(2);
     protected static readonly TimeSpan keepAliveInterval = TimeSpan.FromSeconds(2);
     private static readonly int fileChunkSize = 1024 * 1024;
-    private static readonly int fileBufferSize = 16 * 1014 * 1024;
+    private static readonly int fileBufferSize = 16 * 1024 * 1024;
     private static readonly TimeSpan progressReportInterval = TimeSpan.FromSeconds(0.5);
     private static readonly TimeSpan speedEstimationInterval = TimeSpan.FromSeconds(2);
     
