@@ -59,7 +59,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private bool isProgressVisible;
     
-    private readonly AppConfig appConfig = DataStore.Load();
+    private AppConfig appConfig = DataStore.Load();
     private CancellationTokenSource cts;
     private QuicPeer peer;
     
@@ -517,6 +517,7 @@ public partial class MainWindowViewModel : ViewModelBase
         };
 
         DataStore.Save(config);
+        appConfig = config;
         LoadConfig();
         State = AppState.Lobby;
     }

@@ -7,6 +7,5 @@ the progress bar must not appear if you only rejected a file
 change icon
 gh actions
 flatpak
-load settings after saving
 
 pause, resume later, cancel
