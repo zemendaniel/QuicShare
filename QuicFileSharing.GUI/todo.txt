@@ -1,5 +1,9 @@
+dev docs
+readme
+license
+
 gh actions
 flatpak
-drag and drop file sending
 
+drag and drop file sending
 pause, resume later, cancel
