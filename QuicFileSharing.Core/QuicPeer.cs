@@ -66,7 +66,8 @@ public abstract class QuicPeer
     private bool fileReady;
     private Stopwatch? progressStopwatch;
 
-    public bool IsTransferInProgress { get; private set; }
+    public bool IsTransferInitiated { get; private set; }
+    public bool IsTransferInProgress {get; private set;}
 
     protected static readonly TimeSpan connectionTimeout = TimeSpan.FromSeconds(30); 
     private static readonly TimeSpan timeoutCheckInterval = TimeSpan.FromSeconds(2);
@@ -78,6 +79,7 @@ public abstract class QuicPeer
     
     public event Action<string>? OnDisconnected;
     public event Action<string, long>? OnFileOffered;
+    public event Action? OnTransferInitiationStateChanged;
     public event Action? OnTransferStateChanged;
     public IProgress<ProgressInfo>? FileTransferProgress { get; set; }
     public TaskCompletionSource<(bool, string?)> FileOfferDecisionTsc { get; private set; } = new();
@@ -187,6 +189,8 @@ public abstract class QuicPeer
         fileHashReady = null;
         filePath = null;
         saveFolder = null;
+        IsTransferInitiated = false;
+        OnTransferInitiationStateChanged?.Invoke();
         IsTransferInProgress = false;
         OnTransferStateChanged?.Invoke();
         progressStopwatch = null;
@@ -228,13 +232,13 @@ public abstract class QuicPeer
                 break;
             
             case var _ when line.StartsWith("METADATA:"):   // Receiver gets this, marks the start of file transfer
-                if (IsTransferInProgress)
+                if (IsTransferInitiated)
                 {
                     await QueueControlMessage("REJECTED:ALREADY_RECEIVING");
                     return;
                 }
-                IsTransferInProgress = true;
-                OnTransferStateChanged?.Invoke();
+                IsTransferInitiated = true;
+                OnTransferInitiationStateChanged?.Invoke();
 
                 if (IsSending)
                 {
@@ -303,6 +307,9 @@ public abstract class QuicPeer
 
     public async Task StartSending()
     {
+        IsTransferInitiated = true;
+        OnTransferInitiationStateChanged?.Invoke();
+        
         FileTransferCompleted = new();
         await WaitForStreamsAsync();
         if (filePath == null)
@@ -324,18 +331,18 @@ public abstract class QuicPeer
 
     private async Task SendFileAsync()
     {
-        if (filePath == null)
-            throw new InvalidOperationException("File path not set.");
-        if (fileStream == null)
-            throw new InvalidOperationException("File stream not initialized.");
         if (IsTransferInProgress)
         {
             return;
         }
-        
         IsTransferInProgress = true;
         OnTransferStateChanged?.Invoke();
-
+        
+        if (filePath == null)
+            throw new InvalidOperationException("File path not set.");
+        if (fileStream == null)
+            throw new InvalidOperationException("File stream not initialized.");
+        
         var hashQueue = Channel.CreateBounded<ArraySegment<byte>>(new BoundedChannelOptions(128)
         {
             FullMode = BoundedChannelFullMode.Wait
@@ -387,6 +394,13 @@ public abstract class QuicPeer
 
     private async Task ReceiveFileAsync()
     {
+        if (IsTransferInProgress)
+        {
+            return;
+        }
+        IsTransferInProgress = true;
+        OnTransferStateChanged?.Invoke();
+        
         if (metadata == null)
             throw new Exception("The receiver was started prematurely.");
 

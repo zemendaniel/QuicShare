@@ -53,7 +53,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string settingsText = string.Empty;
     [ObservableProperty]
-    private bool isTransferInProgress;
+    private bool isTransferInitiated;
     [ObservableProperty]
     private string filePath = string.Empty;   
     [ObservableProperty]
@@ -355,7 +355,7 @@ public partial class MainWindowViewModel : ViewModelBase
             LobbyText = $"Connection Error: {msg}";
             RoomCode = "";
             State = AppState.Lobby;
-            IsTransferInProgress = false;
+            IsTransferInitiated = false;
         };
         peer.OnFileOffered += async (fileName, fileSize) =>
         {
@@ -382,14 +382,18 @@ public partial class MainWindowViewModel : ViewModelBase
             var status = await peer.FileTransferCompleted!.Task;
             HandleFileTransferCompleted(status);
         };
-        peer.OnTransferStateChanged += () =>
+        peer.OnTransferInitiationStateChanged += () =>
         {
-            IsTransferInProgress = peer.IsTransferInProgress;
-            if (IsTransferInProgress)
+            IsTransferInitiated = peer.IsTransferInitiated;
+            if (IsTransferInitiated)
             {
                 RoomText = "";
-                IsProgressVisible = true;
             }
+        };
+        peer.OnTransferStateChanged += () =>
+        {
+            if (peer.IsTransferInProgress)
+                IsProgressVisible = true;
         };
     }
 
@@ -449,7 +453,7 @@ public partial class MainWindowViewModel : ViewModelBase
     }
     
     [RelayCommand]
-    private void BackToLobby()
+    private void BackToLobby() 
     {
         State = AppState.Lobby;
     }

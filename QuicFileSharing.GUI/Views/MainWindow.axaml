@@ -309,11 +309,11 @@
                                     FontWeight="Bold"
                                     Background="{DynamicResource PrimaryBrush}"
                                     BorderBrush="{DynamicResource AccentBrush}"
-                                    IsEnabled="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"/>
+                                    IsEnabled="{Binding IsTransferInitiated, Converter={StaticResource InverseBoolConverter}}"/>
 
                             <!-- Receiving Status -->
                             <TextBlock FontWeight="Bold" FontSize="16" TextAlignment="Center" Margin="0,0,0,20"
-                                       IsVisible="{Binding IsTransferInProgress, Converter={StaticResource InverseBoolConverter}}"
+                                       IsVisible="{Binding IsTransferInitiated, Converter={StaticResource InverseBoolConverter}}"
                                        Foreground="{DynamicResource TextBrush}">
                                 You are open to receiving files.
                             </TextBlock>
