@@ -1,4 +1,3 @@
-change icon
 gh actions
 flatpak
 drag and drop file sending
