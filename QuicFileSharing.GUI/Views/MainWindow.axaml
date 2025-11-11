@@ -329,11 +329,15 @@
                                                  TextWrapping="Wrap"/>
 
                             <!-- Progress Section -->
-                            <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="400"
+                            <StackPanel Orientation="Vertical" Margin="10" Spacing="10" Width="600"
                                         IsVisible="{Binding IsProgressVisible}"
                                         Effect="{DynamicResource DropShadow}">
-                                <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercentage}" Height="20"/>
-                                <TextBlock Text="{Binding ProgressText}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" TextAlignment="Center"/>
+                                <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercentage}" Height="20" Width="400"
+                                             Foreground="{DynamicResource PrimaryBrush}"
+                                             Background="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="{Binding ProgressText}" FontWeight="Bold" 
+                                           Foreground="{DynamicResource TextBrush}" TextAlignment="Center"
+                                           MaxWidth="600" TextWrapping="Wrap"/>
                             </StackPanel>
                         </StackPanel>
 
