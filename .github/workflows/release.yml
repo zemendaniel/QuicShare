@@ -39,7 +39,7 @@ jobs:
       # -------------------------
       - name: Publish Windows x64
         run: |
-          dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-x64 --self-contained true /p:UseAppHost=true
+          dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-x64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
           echo "PUBLISH_DIR_X64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish" >> $GITHUB_ENV
 
       - name: Generate vars.iss for x64
