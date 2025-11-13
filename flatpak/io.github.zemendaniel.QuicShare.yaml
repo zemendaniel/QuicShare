@@ -1,0 +1,23 @@
+﻿modules:
+  - name: quicshare
+    buildsystem: simple
+    build-commands:
+      # The QuicShare executable is in the root of the extracted tarball
+      - install -D QuicShare /app/bin/QuicShare
+
+      # Install desktop file
+      - install -D quicshare.desktop /app/share/applications/io.github.zemendaniel.QuicShare.desktop
+
+      # Install icon
+      - install -D icon.png /app/share/icons/hicolor/256x256/apps/io.github.zemendaniel.QuicShare.png
+
+    sources:
+      - type: archive
+        path: QuicShare-linux-x64.tar.gz
+
+      - type: file
+        path: quicshare.desktop
+
+      - type: file
+        path: ../QuicFileSharing.GUI/Assets/icon.png
+        dest-filename: icon.png

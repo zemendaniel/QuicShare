@@ -1,0 +1,8 @@
+﻿[Desktop Entry]
+Name=QuicShare
+Comment=Send files quickly and securely
+Exec=QuicShare
+Icon=io.github.zemendaniel.QuicShare
+Terminal=false
+Type=Application
+Categories=Utility;Network;
