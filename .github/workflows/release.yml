@@ -46,61 +46,61 @@ jobs:
           $ver = '${{ steps.set_version.outputs.version }}'
           $publishDir = "$env:PUBLISH_DIR_X64"
           @"
-#define PublishDir = "`"$publishDir`""
-#define AppVersion = "`"$ver`""
-  "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
+          #define PublishDir = "`"$publishDir`""
+          #define AppVersion = "`"$ver`""
+          "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
 
-- name: Build x64 installer
-  shell: pwsh
-  run: |
-    & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-      "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
-      /O"$env:GITHUB_WORKSPACE\artifacts" `
-      /F"QuicShareInstaller-$($env:version)-win-x64"
+      - name: Build x64 installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
+            /O"$env:GITHUB_WORKSPACE\artifacts" `
+            /F"QuicShareInstaller-$($env:version)-win-x64"
 
-# -------------------------
-# Windows ARM64
-# -------------------------
-- name: Publish Windows ARM64
-  run: |
-    dotnet publish -c Release -r win-arm64 --self-contained true /p:UseAppHost=true
-    echo "PUBLISH_DIR_ARM64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish" >> $GITHUB_ENV
+      # -------------------------
+      # Windows ARM64
+      # -------------------------
+      - name: Publish Windows ARM64
+        run: |
+          dotnet publish -c Release -r win-arm64 --self-contained true /p:UseAppHost=true
+          echo "PUBLISH_DIR_ARM64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish" >> $GITHUB_ENV
 
-- name: Generate vars.iss for ARM64
-  shell: pwsh
-  run: |
-    $ver = '${{ steps.set_version.outputs.version }}'
-    $publishDir = "$env:PUBLISH_DIR_ARM64"
-    @"
-#define PublishDir = "`"$publishDir`""
-#define AppVersion = "`"$ver`""
-  "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
+      - name: Generate vars.iss for ARM64
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.set_version.outputs.version }}'
+          $publishDir = "$env:PUBLISH_DIR_ARM64"
+          @"
+          #define PublishDir = "`"$publishDir`""
+          #define AppVersion = "`"$ver`""
+          "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
+    
+      - name: Build ARM64 installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
+            /O"$env:GITHUB_WORKSPACE\artifacts" `
+            /F"QuicShareInstaller-$($env:version)-win-arm64"
 
-- name: Build ARM64 installer
-  shell: pwsh
-  run: |
-    & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
-      "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
-      /O"$env:GITHUB_WORKSPACE\artifacts" `
-      /F"QuicShareInstaller-$($env:version)-win-arm64"
+      # -------------------------
+      # GitHub Release
+      # -------------------------
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-# -------------------------
-# GitHub Release
-# -------------------------
-- name: Create GitHub Release
-  id: create_release
-  uses: actions/create-release@v1
-  with:
-    tag_name: ${{ github.ref_name }}
-    release_name: ${{ github.ref_name }}
-    draft: false
-    prerelease: false
-  env:
-    GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-
-- name: Upload installers to release
-  uses: softprops/action-gh-release@v1
-  with:
-    files: artifacts/*.exe
-  env:
-    GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Upload installers to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
