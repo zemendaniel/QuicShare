@@ -27,8 +27,10 @@ jobs:
           } else {
               $ver = git describe --tags --always
           }
+          # Remove leading 'v' if present
+          $ver = $ver -replace '^v', ''
           echo "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
-
+      
       - name: Create artifacts folder
         run: mkdir "$env:GITHUB_WORKSPACE\artifacts"
 
@@ -56,7 +58,7 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
             /O"$env:GITHUB_WORKSPACE\artifacts" `
-            /F"QuicShareInstaller-${{ steps.set_version.outputs.version }}-win-x64"
+            /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-x64"
 
       # -------------------------
       # Windows ARM64
@@ -81,7 +83,7 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
             /O"$env:GITHUB_WORKSPACE\artifacts" `
-            /F"QuicShareInstaller-${{ steps.set_version.outputs.version }}-win-arm64"
+            /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64"
 
       # -------------------------
       # GitHub Release
