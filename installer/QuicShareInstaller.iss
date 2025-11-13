@@ -4,6 +4,7 @@
 ; -------------------------------------------------------------
 
 [Setup]
+AppId={49c50815-b575-44bd-ba5a-35cc0182831f}
 AppName=QuicShare
 AppVersion=1.0
 DefaultDirName={pf}\QuicShare
