@@ -12,7 +12,7 @@
 #endif
 
 [Setup]
-AppId={49c50815-b575-44bd-ba5c-0182831f}
+AppId={{49c50815-b575-44bd-ba5c-0182831f}
 AppName=QuicShare
 AppVersion={#AppVersion}       ; <- preprocessor symbol
 AppVerName=QuicShare {#AppVersion}  ; satisfies Inno requirement
