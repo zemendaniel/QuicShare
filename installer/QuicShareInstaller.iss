@@ -7,14 +7,16 @@
 ; Preprocessor symbols
 ; -------------------------------
 ; Default PublishDir for local builds
-#ifndef PublishDir
-  #define PublishDir "..\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish"
-#endif
+; #ifndef PublishDir
+  ; #define PublishDir "..\QuicFileSharing.GUI\bin\Release\net9.0\win-x644444\publish"
+; #endif
 
 ; Default AppVersion if not provided by workflow
-#ifndef AppVersion
-  #define AppVersion "0.0.0"
-#endif
+; #ifndef AppVersion
+  ; #define AppVersion "0.0.0"
+; #endif
+
+#include "vars.iss"
 
 [Setup]
 AppId={{49c50815-b575-44bd-ba5c-0182831f}
