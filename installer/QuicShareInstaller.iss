@@ -3,10 +3,13 @@
 ; Self-contained Avalonia Windows App
 ; -------------------------------------------------------------
 
+; This PublishDir placeholder will be replaced by the workflow per platform
+#define PublishDir "C:\placeholder\path"
+
 [Setup]
 AppId={49c50815-b575-44bd-ba5a-35cc0182831f}
 AppName=QuicShare
-AppVersion=1.0
+AppVersion=PLACEHOLDER_VERSION   ; <- workflow replaces this
 DefaultDirName={pf}\QuicShare
 DefaultGroupName=QuicShare
 DisableProgramGroupPage=no
@@ -26,16 +29,11 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"; Flags: unchecked
 Name: "startmenuicon"; Description: "Create a &Start Menu shortcut"; Flags: exclusive
 
-; -------------------------------
-; Use a relative path to your published folder
-; This assumes the script is in the 'installer/' folder
-; -------------------------------
-#define PublishDir "..\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish"
-
 [Files]
+; Main executable
 Source: "{#PublishDir}\QuicShare.exe"; DestDir: "{app}"; Flags: ignoreversion
+; Other files
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: QuicShare.exe
-
 
 [Icons]
 Name: "{group}\QuicShare"; Filename: "{app}\QuicShare.exe"; IconFilename: "{app}\QuicShare.exe"; Tasks: startmenuicon
