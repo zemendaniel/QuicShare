@@ -44,12 +44,12 @@ jobs:
         shell: pwsh
         run: |
           $ver = '${{ steps.set_version.outputs.version }}'
-          $publishDir = "$env:PUBLISH_DIR_X64"
           @"
-          #define PublishDir = `"$publishDir`"
-          #define AppVersion = `"$ver`"
+          #define PublishDir = "..\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish"
+          #define AppVersion = "$ver"
           "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
-
+      
+      
       - name: Build x64 installer
         shell: pwsh
         run: |
@@ -70,12 +70,11 @@ jobs:
         shell: pwsh
         run: |
           $ver = '${{ steps.set_version.outputs.version }}'
-          $publishDir = "$env:PUBLISH_DIR_ARM64"
           @"
-          #define PublishDir = `"$publishDir`"
-          #define AppVersion = `"$ver`"
+          #define PublishDir = "..\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish"
+          #define AppVersion = "$ver"
           "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
-    
+      
       - name: Build ARM64 installer
         shell: pwsh
         run: |
