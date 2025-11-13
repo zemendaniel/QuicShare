@@ -3,10 +3,15 @@
 ; Self-contained Avalonia Windows App
 ; -------------------------------------------------------------
 
-; This PublishDir placeholder will be replaced by the workflow per platform
-#define PublishDir "C:\placeholder\path"
+; -------------------------------
+; Preprocessor symbols
+; -------------------------------
+; Default PublishDir for local builds
+#ifndef PublishDir
+  #define PublishDir "..\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish"
+#endif
 
-; Provide a default AppVersion if not defined by workflow
+; Default AppVersion if not provided by workflow
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
@@ -14,8 +19,8 @@
 [Setup]
 AppId={{49c50815-b575-44bd-ba5c-0182831f}
 AppName=QuicShare
-AppVersion={#AppVersion}       ; <- preprocessor symbol
-AppVerName=QuicShare {#AppVersion}  ; satisfies Inno requirement
+AppVersion={#AppVersion}
+AppVerName=QuicShare {#AppVersion}
 DefaultDirName={pf}\QuicShare
 DefaultGroupName=QuicShare
 DisableProgramGroupPage=no
@@ -38,7 +43,7 @@ Name: "startmenuicon"; Description: "Create a &Start Menu shortcut"; Flags: excl
 [Files]
 ; Main executable
 Source: "{#PublishDir}\QuicShare.exe"; DestDir: "{app}"; Flags: ignoreversion
-; Other files
+; All other files in publish folder
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: QuicShare.exe
 
 [Icons]
