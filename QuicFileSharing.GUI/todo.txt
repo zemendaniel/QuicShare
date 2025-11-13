@@ -2,8 +2,8 @@ dev docs
 readme
 license
 
-gh actions
-flatpak
+gh actions specify release in publish command
+gh actions flatpak
 
 drag and drop file sending
 pause, resume later, cancel
