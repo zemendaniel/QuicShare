@@ -2,7 +2,6 @@ dev docs
 readme
 license
 
-gh actions specify release in publish command
 gh actions flatpak
 
 drag and drop file sending
