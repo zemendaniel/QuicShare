@@ -18,8 +18,16 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Extract version from tag
-        run: echo "APP_VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Determine version
+        id: set_version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -match 'refs/tags/(.+)') {
+              $ver = $Matches[1]
+          } else {
+              $ver = git describe --tags --always
+          }
+          echo "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
 
       - name: Create artifacts folder
         run: mkdir "$env:GITHUB_WORKSPACE\artifacts"
@@ -30,21 +38,18 @@ jobs:
       - name: Publish Windows x64
         run: |
           dotnet publish -c Release -r win-x64 --self-contained true /p:UseAppHost=true
-          echo "PUBLISH_DIR=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish" >> $GITHUB_ENV
-
-      - name: Prepare Inno Setup script for x64
-        run: |
-          $issPath = "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss"
-          (Get-Content $issPath) `
-            -replace 'AppVersion=.*', "AppVersion=$env:APP_VERSION" `
-            -replace 'PublishDir=.*', "PublishDir=$env:PUBLISH_DIR" | Set-Content $issPath
+          echo "PUBLISH_DIR_X64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish" >> $GITHUB_ENV
 
       - name: Build x64 installer
+        shell: pwsh
         run: |
+          $ver = '${{ steps.set_version.outputs.version }}'
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
+            /DAppVersion="\"$ver\"" `
+            /DPublishDir="\"$env:PUBLISH_DIR_X64\"" `
             /O"$env:GITHUB_WORKSPACE\artifacts" `
-            /F"QuicShareInstaller-$env:APP_VERSION-win-x64"
+            /F"QuicShareInstaller-$ver-win-x64"
 
       # -------------------------
       # Windows ARM64
@@ -52,21 +57,18 @@ jobs:
       - name: Publish Windows ARM64
         run: |
           dotnet publish -c Release -r win-arm64 --self-contained true /p:UseAppHost=true
-          echo "PUBLISH_DIR=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish" >> $GITHUB_ENV
-
-      - name: Prepare Inno Setup script for ARM64
-        run: |
-          $issPath = "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss"
-          (Get-Content $issPath) `
-            -replace 'AppVersion=.*', "AppVersion=$env:APP_VERSION" `
-            -replace 'PublishDir=.*', "PublishDir=$env:PUBLISH_DIR" | Set-Content $issPath
+          echo "PUBLISH_DIR_ARM64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish" >> $GITHUB_ENV
 
       - name: Build ARM64 installer
+        shell: pwsh
         run: |
+          $ver = '${{ steps.set_version.outputs.version }}'
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
             "$env:GITHUB_WORKSPACE\installer\QuicShareInstaller.iss" `
+            /DAppVersion="\"$ver\"" `
+            /DPublishDir="\"$env:PUBLISH_DIR_ARM64\"" `
             /O"$env:GITHUB_WORKSPACE\artifacts" `
-            /F"QuicShareInstaller-$env:APP_VERSION-win-arm64"
+            /F"QuicShareInstaller-$ver-win-arm64"
 
       # -------------------------
       # GitHub Release

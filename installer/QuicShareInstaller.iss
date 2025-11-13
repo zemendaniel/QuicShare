@@ -6,10 +6,16 @@
 ; This PublishDir placeholder will be replaced by the workflow per platform
 #define PublishDir "C:\placeholder\path"
 
+; Provide a default AppVersion if not defined by workflow
+#ifndef AppVersion
+  #define AppVersion "0.0.0"
+#endif
+
 [Setup]
-AppId={49c50815-b575-44bd-ba5a-35cc0182831f}
+AppId={49c50815-b575-44bd-ba5c-0182831f}
 AppName=QuicShare
-AppVersion=PLACEHOLDER_VERSION   ; <- workflow replaces this
+AppVersion={#AppVersion}       ; <- preprocessor symbol
+AppVerName=QuicShare {#AppVersion}  ; satisfies Inno requirement
 DefaultDirName={pf}\QuicShare
 DefaultGroupName=QuicShare
 DisableProgramGroupPage=no
