@@ -17,7 +17,7 @@ public class AppConfig
 
     private const int DefaultPortV4 = 55441;
     private const bool DefaultForceIPv4 = false;
-    private const string DefaultSignalingServer = "ws://quic-share.zemendaniel.hu:8080";
+    private const string DefaultSignalingServer = "wss://quic-share.zemendaniel.hu";
     private const string DefaultApiV6 = "https://ipv6.seeip.org";
     private const string DefaultApiV4 = "https://api.ipify.org";
     private const string DefaultSenderPath = "";

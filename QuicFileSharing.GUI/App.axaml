@@ -11,6 +11,6 @@
   
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://QuicFileSharing.GUI/Styles/Colors.axaml"/>
+        <StyleInclude Source="avares://QuicShare/Styles/Colors.axaml"/>
     </Application.Styles>
 </Application>

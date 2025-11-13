@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         x:Class="QuicFileSharing.GUI.Views.FileOfferDialog"
         x:DataType="vm:FileOfferDialogViewModel"
-        Icon="avares://QuicFileSharing.GUI/Assets/icon.png"
+        Icon="avares://QuicShare/Assets/icon.png"
         Title="Incoming File"
         Width="400"
         Height="280"

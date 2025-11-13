@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         x:Class="QuicFileSharing.GUI.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        Icon="avares://QuicFileSharing.GUI/Assets/icon.png"
+        Icon="avares://QuicShare/Assets/icon.png"
         Title="QuicShare"
         WindowStartupLocation="CenterScreen"
         Width="900"

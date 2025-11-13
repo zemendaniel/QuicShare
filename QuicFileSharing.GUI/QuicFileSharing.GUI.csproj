@@ -9,6 +9,9 @@
   <PropertyGroup>
     <!-- Disable all platform compatibility warnings -->
     <NoWarn>$(NoWarn);CS8774</NoWarn>
+    <AssemblyName>QuicShare</AssemblyName>
+    <TargetName>QuicShare</TargetName>  
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

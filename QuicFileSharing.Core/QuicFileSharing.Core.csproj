@@ -10,9 +10,8 @@
         <!-- Disable all platform compatibility warnings -->
         <NoWarn>$(NoWarn);CA1416</NoWarn>
     </PropertyGroup>
-	<ItemGroup>
-		<None Include="runtimes/linux-x64/native/libmsquic.so" CopyToOutputDirectory="Always" />
-	</ItemGroup>
-
-
+<!--	<ItemGroup>-->
+<!--		<None Include="runtimes/linux-x64/native/libmsquic.so" CopyToOutputDirectory="Always" />-->
+<!--	</ItemGroup>-->
+    
 </Project>
