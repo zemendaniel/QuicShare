@@ -46,8 +46,8 @@ jobs:
           $ver = '${{ steps.set_version.outputs.version }}'
           $publishDir = "$env:PUBLISH_DIR_X64"
           @"
-          #define PublishDir = "`"$publishDir`""
-          #define AppVersion = "`"$ver`""
+          #define PublishDir = `"$publishDir`"
+          #define AppVersion = `"$ver`"
           "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
 
       - name: Build x64 installer
@@ -72,8 +72,8 @@ jobs:
           $ver = '${{ steps.set_version.outputs.version }}'
           $publishDir = "$env:PUBLISH_DIR_ARM64"
           @"
-          #define PublishDir = "`"$publishDir`""
-          #define AppVersion = "`"$ver`""
+          #define PublishDir = `"$publishDir`"
+          #define AppVersion = `"$ver`"
           "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
     
       - name: Build ARM64 installer
