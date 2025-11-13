@@ -1,0 +1,67 @@
+name: Build Windows Installers & Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on tags like v1.0, v1.1, etc.
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          echo "APP_VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Prepare Inno Setup script
+        run: |
+          $issPath = "$env:GITHUB_WORKSPACE\QuicShareInstaller.iss"
+          Write-Host "Updating AppVersion in ISS file to $env:APP_VERSION"
+          (Get-Content $issPath) -replace 'AppVersion=.*', "AppVersion=$env:APP_VERSION" | Set-Content $issPath
+
+      - name: Publish Windows x64
+        run: |
+          dotnet publish -c Release -r win-x64 --self-contained true /p:UseAppHost=true
+          mkdir "$env:GITHUB_WORKSPACE\artifacts"
+          $publishDir = "$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish"
+
+      - name: Build x64 installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "$env:GITHUB_WORKSPACE\QuicShareInstaller.iss" /O"$env:GITHUB_WORKSPACE\artifacts" /F"QuicShareInstaller-$env:APP_VERSION-win-x64"
+
+      - name: Publish Windows ARM64
+        run: |
+          dotnet publish -c Release -r win-arm64 --self-contained true /p:UseAppHost=true
+          $publishDir = "$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish"
+
+      - name: Build ARM64 installer
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "$env:GITHUB_WORKSPACE\QuicShareInstaller.iss" /O"$env:GITHUB_WORKSPACE\artifacts" /F"QuicShareInstaller-$env:APP_VERSION-win-arm64"
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Upload installers to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: artifacts/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
