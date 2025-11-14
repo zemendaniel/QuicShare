@@ -11,6 +11,19 @@ finish-args:
   - --filesystem=home
 
 modules:
+  - name: libnuma
+    buildsystem: autotools
+    config-opts:
+      - --prefix=/app
+      - --libdir=/app/lib
+    build-commands:
+      - ./configure --prefix=/app --libdir=/app/lib
+      - make
+      - make install DESTDIR=/app
+    sources:
+      - type: archive
+        path: numactl-2.0.19.tar.gz
+  
   - name: quicshare
     buildsystem: simple
     build-commands:
@@ -28,3 +41,4 @@ modules:
       # Include all files from the flatpak/ folder
       - type: dir
         path: .
+
