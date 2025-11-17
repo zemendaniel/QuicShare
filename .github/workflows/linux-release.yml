@@ -56,57 +56,54 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
       - name: Publish Linux and prepare flatpak folder
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          PUBLISH_DIR="$GITHUB_WORKSPACE/QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
-          FLATPAK_DIR="$GITHUB_WORKSPACE/flatpak"
+
+          # Hardcoded paths
+          PUBLISH_DIR="/home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
+          FLATPAK_DIR="/home/runner/work/QuicShare/QuicShare/flatpak"
 
           # Publish GUI project
-          dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
+          dotnet publish /home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
             -c Release -r linux-x64 --self-contained true \
             /p:UseAppHost=true /p:Version=$VERSION
 
-          # Copy native libmsquic.so to flatpak folder
-          cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$FLATPAK_DIR/"
+          # Copy native library to flatpak folder
+          cp /home/runner/work/QuicShare/QuicShare/QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$FLATPAK_DIR/"
 
           # Make the main binary executable
           chmod +x "$PUBLISH_DIR/QuicShare"
 
           # Copy icon and published binaries to flatpak folder
-          cp ./QuicFileSharing.GUI/Assets/icon.png "$FLATPAK_DIR/"
+          cp /home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/Assets/icon.png "$FLATPAK_DIR/"
           cp "$PUBLISH_DIR/"* "$FLATPAK_DIR/"
 
       - name: Install Flatpak tools
         run: |
           sudo apt update
           sudo apt install -y flatpak flatpak-builder
-
-          # Add Flathub remote for current user to avoid system permissions issues
           flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak install -y --user flathub org.freedesktop.Sdk//25.08
           flatpak install -y --user flathub org.freedesktop.Platform//25.08
 
       - name: Build Flatpak Repo
         run: |
-          cd "$FLATPAK_DIR"
-          flatpak-builder --force-clean --repo=repo build-dir io.github.zemendaniel.QuicShare.yaml
+          cd /home/runner/work/QuicShare/QuicShare/flatpak
+          flatpak-builder --force-clean --repo=/home/runner/work/QuicShare/QuicShare/flatpak/repo build-dir io.github.zemendaniel.QuicShare.yaml
 
       - name: Build Flatpak Bundle
         run: |
-          cd "$FLATPAK_DIR"
-          flatpak build-bundle repo QuicShare.flatpak io.github.zemendaniel.QuicShare master
+          cd /home/runner/work/QuicShare/QuicShare/flatpak
+          flatpak build-bundle /home/runner/work/QuicShare/QuicShare/flatpak/repo \
+            /home/runner/work/QuicShare/QuicShare/flatpak/QuicShare.flatpak \
+            io.github.zemendaniel.QuicShare master
 
       - name: Upload Flatpak Artifact
         uses: actions/upload-artifact@v4
         with:
           name: flatpak
-          path: flatpak/QuicShare.flatpak
+          path: /home/runner/work/QuicShare/QuicShare/flatpak/QuicShare.flatpak
 
       - name: Set FLATPAK_NAME output
         id: setflatpak
