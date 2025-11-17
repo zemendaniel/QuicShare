@@ -8,6 +8,8 @@ on:
 jobs:
   build-standalone:
     runs-on: ubuntu-latest
+    outputs:
+      ZIP_NAME: ${{ steps.setzip.outputs.ZIP_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -18,12 +20,12 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Publish Linux
+        id: setzip
         run: |
           VERSION=${GITHUB_REF_NAME#v}
 
           PUBLISH_DIR="$GITHUB_WORKSPACE/QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
 
-          # Publish the GUI project
           dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
             -c Release \
             -r linux-x64 \
@@ -31,30 +33,21 @@ jobs:
             /p:UseAppHost=true \
             /p:Version=$VERSION
 
-          # Copy libmsquic.so
           cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$PUBLISH_DIR/"
-
-          # Verify binary exists
-          ls -l "$PUBLISH_DIR"
-
-          if [ ! -f "$PUBLISH_DIR/QuicShare" ]; then
-            echo "ERROR: QuicShare not found!"
-            exit 1
-          fi
 
           ZIP_NAME="QuicShare-v${VERSION}-linux-x64.zip"
 
-          # Create zip ABSOLUTELY in repo root
           cd "$PUBLISH_DIR"
           zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" .
 
-          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+          # Output ZIP name for next job
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - name: Upload Linux Artifact
         uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: ${{ env.ZIP_NAME }}
+          path: ${{ steps.setzip.outputs.ZIP_NAME }}
 
   release:
     needs: build-standalone
@@ -78,6 +71,6 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ env.ZIP_NAME }}
+          files: ${{ needs.build-standalone.outputs.ZIP_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
