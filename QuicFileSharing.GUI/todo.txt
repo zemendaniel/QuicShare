@@ -1,7 +1,0 @@
-dev docs
-readme
-
-gh actions flatpak
-
-drag and drop file sending
-pause, resume later, cancel
