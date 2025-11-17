@@ -3,6 +3,8 @@ runtime: org.freedesktop.Platform
 runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 command: QuicShare
+app-version: '1.0'
+
 finish-args:
   - --share=network
   - --socket=wayland

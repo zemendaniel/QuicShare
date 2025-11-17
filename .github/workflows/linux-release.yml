@@ -79,6 +79,8 @@ jobs:
           cp /home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/Assets/icon.png "$FLATPAK_DIR/"
           cp "$PUBLISH_DIR/"* "$FLATPAK_DIR/"
 
+          sed -i "s/^app-version:.*/app-version: $VERSION/" flatpak/io.github.zemendaniel.QuicShare.yaml
+
       - name: Install Flatpak tools
         run: |
           sudo apt update
