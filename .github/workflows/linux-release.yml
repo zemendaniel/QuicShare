@@ -21,6 +21,8 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
 
+          PUBLISH_DIR="QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
+
           # Publish the GUI project
           dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
             -c Release \
@@ -30,14 +32,25 @@ jobs:
             /p:Version=$VERSION
 
           # Copy native libmsquic.so
-          cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so \
-             QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish/
+          cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$PUBLISH_DIR/"
+
+          # Rename main binary safely
+          if [ -f "$PUBLISH_DIR/QuicFileSharing.GUI" ]; then
+            mv "$PUBLISH_DIR/QuicFileSharing.GUI" "$PUBLISH_DIR/QuicShare"
+          elif [ -f "$PUBLISH_DIR/QuicFileSharing.GUI.dll" ]; then
+            mv "$PUBLISH_DIR/QuicFileSharing.GUI.dll" "$PUBLISH_DIR/QuicShare.dll"
+          else
+            echo "ERROR: No QuicFileSharing.GUI executable found!"
+            ls -l "$PUBLISH_DIR"
+            exit 1
+          fi
 
           # Create zip with dynamic version
-          ZIP_NAME=QuicShare-v${VERSION}-linux-x64.zip
-          cd QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish/
-          zip -r ../../$ZIP_NAME .
-          cd ../..
+          ZIP_NAME="QuicShare-v${VERSION}-linux-x64.zip"
+          cd "$PUBLISH_DIR"
+          zip -r "../../../$ZIP_NAME" .
+          cd ../../../
+
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Upload Linux Artifact
