@@ -1,6 +1,6 @@
 ﻿app-id: io.github.zemendaniel.QuicShare
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '25.08'
 sdk: org.freedesktop.Sdk
 command: QuicShare
 finish-args:
@@ -11,11 +11,25 @@ finish-args:
   - --filesystem=home
 
 modules:
+  - name: libnuma
+    buildsystem: autotools
+    config-opts:
+      - --prefix=/app
+      - --libdir=/app/lib
+    build-commands:
+      - ./configure --prefix=/app --libdir=/app/lib
+      - make
+      - make install DESTDIR=/app
+    sources:
+      - type: archive
+        path: numactl-2.0.19.tar.gz
+  
   - name: quicshare
     buildsystem: simple
     build-commands:
-      # Install executable from archive root
-      - install -D QuicShare /app/bin/QuicShare
+      # Copy entire flatpak/ folder to /app
+      - mkdir -p /app/bin
+      - cp -r * /app/bin/
 
       # Install desktop file
       - install -D quicshare.desktop /app/share/applications/io.github.zemendaniel.QuicShare.desktop
@@ -24,15 +38,7 @@ modules:
       - install -D icon.png /app/share/icons/hicolor/256x256/apps/io.github.zemendaniel.QuicShare.png
 
     sources:
-      # Main app tarball
-      - type: archive
-        path: QuicShare-linux-x64.tar.gz
+      # Include all files from the flatpak/ folder
+      - type: dir
+        path: .
 
-      # Desktop file
-      - type: file
-        path: quicshare.desktop
-
-      # Icon file
-      - type: file
-        path: ../QuicFileSharing.GUI/Assets/icon.png
-        dest-filename: icon.png
