@@ -27,19 +27,18 @@ jobs:
             -r linux-x64 \
             --self-contained true \
             /p:UseAppHost=true \
-            /p:Version=$VERSION \
-            -o publish/linux-x64
+            /p:Version=$VERSION
 
           # Copy native libmsquic.so
           cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so \
-             publish/linux-x64/
+             QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish/
 
           # Rename the main binary to QuicShare
-          mv publish/linux-x64/QuicFileSharing.GUI publish/linux-x64/QuicShare
+          mv QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish/QuicFileSharing.GUI QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish/QuicShare
 
           # Create zip with dynamic version
           ZIP_NAME=QuicShare-v${VERSION}-linux-x64.zip
-          cd publish/linux-x64
+          cd QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish/
           zip -r ../../$ZIP_NAME .
           cd ../..
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
@@ -67,11 +66,11 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
           files: ${{ env.ZIP_NAME }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

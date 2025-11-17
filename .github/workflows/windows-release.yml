@@ -3,7 +3,7 @@ name: Build Windows Installers & Release
 on:
   push:
     tags:
-      - 'v*'  # Trigger on tags like v1.0, v1.1, etc.
+      - 'x*'  # Trigger on tags like v1.0, v1.1, etc. TODO CHANGE TO v
 
 jobs:
   build-and-release:
