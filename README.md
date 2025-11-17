@@ -2,6 +2,8 @@
 
 > Send files quickly and securely
 
+[![Download Now](https://img.shields.io/badge/Download%20Now-%23007ACC?style=for-the-badge&logo=github&logoColor=white)](https://github.com/zemendaniel/QuicShare/releases/latest)
+
 A fast, lightweight, cross‑platform peer‑to‑peer file sharing app between two peers.  
 Built with **.NET 9** and **Avalonia**.
 
