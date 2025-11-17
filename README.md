@@ -10,7 +10,7 @@ It’s perfect for sending large files to friends and family without paying for 
 Just launch the app, share a room code, and send files directly between your devices.
 
 ---
-![alt text](image.png)
+<img width="1031" height="572" alt="Screenshot_20251117_155411" src="https://github.com/user-attachments/assets/28a2e4c5-10fc-4a4d-8a84-43bba3e6d929" />
 
 ---
 
@@ -109,9 +109,8 @@ Extract it and run the *QuicShare* binary.
   - `msquic.dll` could not be made to work reliably on Windows 10.
 
 ---
-![alt text](Screenshot_20251117_155441.png)
-
-![alt text](Screenshot_20251117_155648.png)
+<img width="1031" height="572" alt="Screenshot_20251117_155441" src="https://github.com/user-attachments/assets/59ac6a07-61d0-4f88-ae1d-dcbb43ccc7e6" />
+<img width="1031" height="572" alt="Screenshot_20251117_155648" src="https://github.com/user-attachments/assets/ece8f85b-ca61-45ac-acee-c2b11fa25a6f" />
 
 ---
 
