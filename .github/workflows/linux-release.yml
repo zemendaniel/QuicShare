@@ -72,7 +72,7 @@ jobs:
             -c Release -r linux-x64 --self-contained true \
             /p:UseAppHost=true /p:Version=$VERSION
 
-          # Copy native libmsquic.so
+          # Copy native libmsquic.so to flatpak folder
           cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$FLATPAK_DIR/"
 
           # Make the main binary executable
@@ -86,6 +86,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y flatpak flatpak-builder
+
+          # Add Flathub remote for current user to avoid system permissions issues
           flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
           flatpak install -y --user flathub org.freedesktop.Sdk//25.08
           flatpak install -y --user flathub org.freedesktop.Platform//25.08
@@ -110,7 +112,6 @@ jobs:
         id: setflatpak
         run: |
           echo "FLATPAK_NAME=QuicShare.flatpak" >> $GITHUB_OUTPUT
-  
   
   release:
     needs: [build-standalone, build-flatpak]
