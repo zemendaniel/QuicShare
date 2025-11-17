@@ -1,0 +1,77 @@
+﻿name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-standalone:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Publish Linux
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+
+          # Publish the GUI project
+          dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
+            -c Release \
+            -r linux-x64 \
+            --self-contained true \
+            /p:UseAppHost=true \
+            /p:Version=$VERSION \
+            -o publish/linux-x64
+
+          # Copy native libmsquic.so
+          cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so \
+             publish/linux-x64/
+
+          # Rename the main binary to QuicShare
+          mv publish/linux-x64/QuicFileSharing.GUI publish/linux-x64/QuicShare
+
+          # Create zip with dynamic version
+          ZIP_NAME=QuicShare-v${VERSION}-linux-x64.zip
+          cd publish/linux-x64
+          zip -r ../../$ZIP_NAME .
+          cd ../..
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload Linux Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: ${{ env.ZIP_NAME }}
+
+  release:
+    needs: build-standalone
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Standalone Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux
+          path: .
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.ZIP_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
