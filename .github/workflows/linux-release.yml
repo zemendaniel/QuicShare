@@ -34,13 +34,9 @@ jobs:
           # Copy native libmsquic.so
           cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$PUBLISH_DIR/"
 
-          # Rename main binary safely
-          if [ -f "$PUBLISH_DIR/QuicFileSharing.GUI" ]; then
-            mv "$PUBLISH_DIR/QuicFileSharing.GUI" "$PUBLISH_DIR/QuicShare"
-          elif [ -f "$PUBLISH_DIR/QuicFileSharing.GUI.dll" ]; then
-            mv "$PUBLISH_DIR/QuicFileSharing.GUI.dll" "$PUBLISH_DIR/QuicShare.dll"
-          else
-            echo "ERROR: No QuicFileSharing.GUI executable found!"
+          # Verify that QuicShare exists
+          if [ ! -f "$PUBLISH_DIR/QuicShare" ]; then
+            echo "ERROR: Expected executable 'QuicShare' not found!"
             ls -l "$PUBLISH_DIR"
             exit 1
           fi
