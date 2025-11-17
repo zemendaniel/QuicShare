@@ -109,6 +109,9 @@ Extract it and run the *QuicShare* binary.
   - Architectures: **x86_64** via Flatpak or manual build.
 - ⚠️ **Windows 10 is not supported**
   - `msquic.dll` could not be made to work reliably on Windows 10.
+- ⚠️ **macOS is not supported**
+  - `msquic.dll` could not be made to work reliably on macOS. 
+    - But with some help from the community, it should be possible to build a macOS version.
 
 ---
 <img width="1031" height="572" alt="Screenshot_20251117_155441" src="https://github.com/user-attachments/assets/59ac6a07-61d0-4f88-ae1d-dcbb43ccc7e6" />

@@ -40,7 +40,6 @@ jobs:
           cd "$PUBLISH_DIR"
           zip -r "$GITHUB_WORKSPACE/$ZIP_NAME" .
 
-          # Output ZIP name for next job
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_OUTPUT
 
       - name: Upload Linux Artifact
@@ -49,14 +48,62 @@ jobs:
           name: linux
           path: ${{ steps.setzip.outputs.ZIP_NAME }}
 
+  build-flatpak:
+    runs-on: ubuntu-latest
+    outputs:
+      FLATPAK_NAME: ${{ steps.bundle.outputs.FLATPAK_NAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Flatpak Tools
+        run: |
+          sudo apt update
+          sudo apt install -y flatpak flatpak-builder
+
+      - name: Install SDK & Platform
+        run: |
+          flatpak install -y flathub org.freedesktop.Sdk//25.08
+          flatpak install -y flathub org.freedesktop.Platform//25.08
+
+      - name: Build Flatpak
+        run: |
+          flatpak-builder --force-clean build-dir io.github.zemendaniel.QuicShare.yaml
+
+      - name: Export Repo & Bundle Flatpak
+        id: bundle
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+
+          # Create a repo directory
+          flatpak-builder --force-clean --repo=repo build-dir io.github.zemendaniel.QuicShare.yaml
+
+          FLATPAK_NAME="QuicShare-v${VERSION}.flatpak"
+
+          flatpak build-bundle repo "$FLATPAK_NAME" io.github.zemendaniel.QuicShare master
+
+          echo "FLATPAK_NAME=$FLATPAK_NAME" >> $GITHUB_OUTPUT
+
+      - name: Upload Flatpak Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: ${{ steps.bundle.outputs.FLATPAK_NAME }}
+
   release:
-    needs: build-standalone
+    needs: [build-standalone, build-flatpak]
     runs-on: ubuntu-latest
     steps:
-      - name: Download Standalone Artifact
+      - name: Download Linux Artifact
         uses: actions/download-artifact@v4
         with:
           name: linux
+          path: .
+
+      - name: Download Flatpak Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: flatpak
           path: .
 
       - name: Create GitHub Release
@@ -71,6 +118,8 @@ jobs:
       - name: Upload Release Assets
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ needs.build-standalone.outputs.ZIP_NAME }}
+          files: |
+            ${{ needs.build-standalone.outputs.ZIP_NAME }}
+            ${{ needs.build-flatpak.outputs.FLATPAK_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
