@@ -51,7 +51,7 @@ jobs:
   build-flatpak:
     runs-on: ubuntu-latest
     outputs:
-      FLATPAK_NAME: ${{ steps.bundle.outputs.FLATPAK_NAME }}
+      FLATPAK_NAME: ${{ steps.setflatpak.outputs.FLATPAK_NAME }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -66,30 +66,27 @@ jobs:
           flatpak install -y flathub org.freedesktop.Sdk//25.08
           flatpak install -y flathub org.freedesktop.Platform//25.08
 
-      - name: Build Flatpak
+      - name: Build Flatpak Repo
         run: |
-          flatpak-builder --force-clean build-dir io.github.zemendaniel.QuicShare.yaml
-
-      - name: Export Repo & Bundle Flatpak
-        id: bundle
-        run: |
-          VERSION=${GITHUB_REF_NAME#v}
-
-          # Create a repo directory
           flatpak-builder --force-clean --repo=repo build-dir io.github.zemendaniel.QuicShare.yaml
 
-          FLATPAK_NAME="QuicShare-v${VERSION}.flatpak"
-
-          flatpak build-bundle repo "$FLATPAK_NAME" io.github.zemendaniel.QuicShare master
-
-          echo "FLATPAK_NAME=$FLATPAK_NAME" >> $GITHUB_OUTPUT
+      - name: Build Flatpak Bundle
+        run: |
+          flatpak build-bundle repo QuicShare.flatpak io.github.zemendaniel.QuicShare master
 
       - name: Upload Flatpak Artifact
         uses: actions/upload-artifact@v4
         with:
           name: flatpak
-          path: ${{ steps.bundle.outputs.FLATPAK_NAME }}
+          path: QuicShare.flatpak
 
+      - name: Set FLATPAK_NAME output
+        id: setflatpak
+        run: |
+          echo "FLATPAK_NAME=QuicShare.flatpak" >> $GITHUB_OUTPUT
+  
+  
+  
   release:
     needs: [build-standalone, build-flatpak]
     runs-on: ubuntu-latest
