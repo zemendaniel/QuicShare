@@ -23,7 +23,6 @@ jobs:
 
           PUBLISH_DIR="QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
 
-          # Publish the GUI project
           dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
             -c Release \
             -r linux-x64 \
@@ -31,21 +30,18 @@ jobs:
             /p:UseAppHost=true \
             /p:Version=$VERSION
 
-          # Copy native libmsquic.so
           cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$PUBLISH_DIR/"
 
-          # Verify that QuicShare exists
           if [ ! -f "$PUBLISH_DIR/QuicShare" ]; then
             echo "ERROR: Expected executable 'QuicShare' not found!"
             ls -l "$PUBLISH_DIR"
             exit 1
           fi
 
-          # Create zip with dynamic version
           ZIP_NAME="QuicShare-v${VERSION}-linux-x64.zip"
           cd "$PUBLISH_DIR"
-          zip -r "../../../$ZIP_NAME" .
-          cd ../../../
+          zip -r "../../../../$ZIP_NAME" .
+          cd ../../../..
 
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
