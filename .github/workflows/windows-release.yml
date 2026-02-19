@@ -85,23 +85,19 @@ jobs:
             /O"$env:GITHUB_WORKSPACE\artifacts" `
             /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64"
 
-      # -------------------------
-      # GitHub Release
-      # -------------------------
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: ${{ github.ref_name }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      - name: Upload Binaries to QuicShare Server
+        shell: bash
+        run: |
+          VERSION="${{ github.ref_name }}"
+          WIN_X64="artifacts/QuicShareInstaller-${VERSION}-win-x64.exe"
+          WIN_ARM64="artifacts/QuicShareInstaller-${VERSION}-win-arm64.exe"
 
-      - name: Upload installers to release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: artifacts/*.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          echo "Uploading $WIN_X64 and $WIN_ARM64 to server..."
+
+          # We use the exact same endpoint and secrets as the Linux workflow
+          curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
+            -F "version=$VERSION" \
+            -F "win_x64=@$WIN_X64" \
+            -F "win_arm64=@$WIN_ARM64" \
+            --fail --show-error

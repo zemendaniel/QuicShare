@@ -136,7 +136,7 @@ jobs:
       # 3. Create the source code zip (excluding git history and the compiled binaries)
       - name: Zip Source Code
         run: |
-          zip -r Source-code.zip . -x "*.git*" "*.flatpak" "${{ needs.build-standalone.outputs.ZIP_NAME }}"
+          zip -r Source-code.zip . -x "*.git*" "*.flatpak" "${{ needs.build-standalone.outputs.ZIP_NAME }}" "flatpak/*" "installer/*"
 
       # 4. Fire it all off to your Flask backend
       - name: Upload Binaries to QuicShare Server
