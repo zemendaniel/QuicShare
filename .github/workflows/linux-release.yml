@@ -112,10 +112,15 @@ jobs:
         run: |
           echo "FLATPAK_NAME=QuicShare.flatpak" >> $GITHUB_OUTPUT
   
-  release:
+  upload-to-server:
     needs: [build-standalone, build-flatpak]
     runs-on: ubuntu-latest
     steps:
+      # 1. Grab the source code so we can zip it
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Download the compiled artifacts from the other jobs
       - name: Download Linux Artifact
         uses: actions/download-artifact@v4
         with:
@@ -128,20 +133,24 @@ jobs:
           name: flatpak
           path: .
 
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      # 3. Create the source code zip (excluding git history and the compiled binaries)
+      - name: Zip Source Code
+        run: |
+          zip -r Source-code.zip . -x "*.git*" "*.flatpak" "${{ needs.build-standalone.outputs.ZIP_NAME }}"
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            ${{ needs.build-standalone.outputs.ZIP_NAME }}
-            ${{ needs.build-flatpak.outputs.FLATPAK_NAME }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+      # 4. Fire it all off to your Flask backend
+      - name: Upload Binaries to QuicShare Server
+        run: |
+          LINUX_ZIP="${{ needs.build-standalone.outputs.ZIP_NAME }}"
+          FLATPAK="QuicShare.flatpak"
+          SOURCE_ZIP="Source-code.zip"
+
+          echo "Uploading $LINUX_ZIP, $FLATPAK, and $SOURCE_ZIP to server..."
+
+          curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
+            -F "version=${{ github.ref_name }}" \
+            -F "linux_x64=@$LINUX_ZIP" \
+            -F "linux_flatpak=@$FLATPAK" \
+            -F "source_zip=@$SOURCE_ZIP" \
+            --fail --show-error
