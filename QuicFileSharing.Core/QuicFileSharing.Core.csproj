@@ -12,6 +12,7 @@
     </PropertyGroup>
 	<ItemGroup>
 		<None Include="runtimes/linux-x64/native/libmsquic.so" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" />
+		<None Include="runtimes/libmsquic.dylib" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" />
 	</ItemGroup>
     
 </Project>
