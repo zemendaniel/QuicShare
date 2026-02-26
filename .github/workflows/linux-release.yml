@@ -1,4 +1,4 @@
-﻿name: Release Build
+﻿name: Release Build - Linux
 
 on:
   push:
@@ -23,7 +23,6 @@ jobs:
         id: setzip
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-
           PUBLISH_DIR="$GITHUB_WORKSPACE/QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
 
           dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
@@ -33,6 +32,7 @@ jobs:
             /p:UseAppHost=true \
             /p:Version=$VERSION
 
+          # Manual Native Copy
           cp ./QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$PUBLISH_DIR/"
 
           ZIP_NAME="QuicShare-v${VERSION}-linux-x64.zip"
@@ -60,22 +60,16 @@ jobs:
         run: |
           VERSION=${GITHUB_REF_NAME#v}
 
-          # Hardcoded paths
           PUBLISH_DIR="/home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/bin/Release/net9.0/linux-x64/publish"
           FLATPAK_DIR="/home/runner/work/QuicShare/QuicShare/flatpak"
 
-          # Publish GUI project
           dotnet publish /home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/QuicFileSharing.GUI.csproj \
             -c Release -r linux-x64 --self-contained true \
             /p:UseAppHost=true /p:Version=$VERSION
 
-          # Copy native library to flatpak folder
           cp /home/runner/work/QuicShare/QuicShare/QuicFileSharing.Core/runtimes/linux-x64/native/libmsquic.so "$FLATPAK_DIR/"
-
-          # Make the main binary executable
           chmod +x "$PUBLISH_DIR/QuicShare"
 
-          # Copy icon and published binaries to flatpak folder
           cp /home/runner/work/QuicShare/QuicShare/QuicFileSharing.GUI/Assets/icon.png "$FLATPAK_DIR/"
           cp "$PUBLISH_DIR/"* "$FLATPAK_DIR/"
 
@@ -95,32 +89,33 @@ jobs:
           flatpak-builder --force-clean --repo=/home/runner/work/QuicShare/QuicShare/flatpak/repo build-dir io.github.zemendaniel.QuicShare.yaml
 
       - name: Build Flatpak Bundle
+        id: setflatpak
         run: |
+          VERSION=${GITHUB_REF_NAME#v}
           cd /home/runner/work/QuicShare/QuicShare/flatpak
+          
+          # Dynamic versioning applied here
+          FLATPAK_NAME="QuicShare-v${VERSION}.flatpak"
+          
           flatpak build-bundle /home/runner/work/QuicShare/QuicShare/flatpak/repo \
-            /home/runner/work/QuicShare/QuicShare/flatpak/QuicShare.flatpak \
+            /home/runner/work/QuicShare/QuicShare/flatpak/$FLATPAK_NAME \
             io.github.zemendaniel.QuicShare master
+          
+          echo "FLATPAK_NAME=$FLATPAK_NAME" >> $GITHUB_OUTPUT
 
       - name: Upload Flatpak Artifact
         uses: actions/upload-artifact@v4
         with:
           name: flatpak
-          path: /home/runner/work/QuicShare/QuicShare/flatpak/QuicShare.flatpak
+          path: /home/runner/work/QuicShare/QuicShare/flatpak/${{ steps.setflatpak.outputs.FLATPAK_NAME }}
 
-      - name: Set FLATPAK_NAME output
-        id: setflatpak
-        run: |
-          echo "FLATPAK_NAME=QuicShare.flatpak" >> $GITHUB_OUTPUT
-  
   upload-to-server:
     needs: [build-standalone, build-flatpak]
     runs-on: ubuntu-latest
     steps:
-      # 1. Grab the source code so we can zip it
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Download the compiled artifacts from the other jobs
       - name: Download Linux Artifact
         uses: actions/download-artifact@v4
         with:
@@ -133,19 +128,19 @@ jobs:
           name: flatpak
           path: .
 
-      # 3. Create the source code zip (excluding git history and the compiled binaries)
       - name: Zip Source Code
         run: |
-          zip -r Source-code.zip . -x "*.git*" "*.flatpak" "${{ needs.build-standalone.outputs.ZIP_NAME }}" "flatpak/*" "installer/*"
+          VERSION=${GITHUB_REF_NAME#v}
+          SOURCE_ZIP="QuicShare-v${VERSION}-source.zip"
+          zip -r $SOURCE_ZIP . -x "*.git*" "*.flatpak" "${{ needs.build-standalone.outputs.ZIP_NAME }}" "flatpak/*" "installer/*"
+          echo "SOURCE_ZIP=$SOURCE_ZIP" >> $GITHUB_ENV
 
-      # 4. Fire it all off to your Flask backend
-      - name: Upload Binaries to QuicShare Server
+      - name: Upload Linux Binaries to Server
         run: |
           LINUX_ZIP="${{ needs.build-standalone.outputs.ZIP_NAME }}"
-          FLATPAK="QuicShare.flatpak"
-          SOURCE_ZIP="Source-code.zip"
-
-          echo "Uploading $LINUX_ZIP, $FLATPAK, and $SOURCE_ZIP to server..."
+          FLATPAK="${{ needs.build-flatpak.outputs.FLATPAK_NAME }}"
+          
+          echo "Uploading Linux assets and source to server..."
 
           curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \

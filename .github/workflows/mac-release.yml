@@ -1,0 +1,134 @@
+name: Release Build - macOS
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-mac:
+    runs-on: macos-14
+    outputs:
+      MAC_X64_ZIP: ${{ steps.package_mac.outputs.MAC_X64_ZIP }}
+      MAC_ARM64_ZIP: ${{ steps.package_mac.outputs.MAC_ARM64_ZIP }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Publish and Package macOS
+        id: package_mac
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          APP_NAME="QuicShare"
+          
+          # --- Helper function to create .app bundle ---
+          create_app_bundle() {
+            local ARCH=$1
+            local PUBLISH_DIR=$2
+            local ZIP_NAME=$3
+            local APP_DIR="${APP_NAME}_${ARCH}/${APP_NAME}.app"
+          
+            mkdir -p "$APP_DIR/Contents/MacOS"
+            mkdir -p "$APP_DIR/Contents/Resources"
+          
+            # 1. Create the Info.plist file required by macOS
+            cat <<EOF > "$APP_DIR/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleIdentifier</key>
+              <string>io.github.zemendaniel.QuicShare</string>
+              <key>CFBundleName</key>
+              <string>$APP_NAME</string>
+              <key>CFBundleVersion</key>
+              <string>$VERSION</string>
+              <key>CFBundleShortVersionString</key>
+              <string>$VERSION</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>10.15</string>
+          </dict>
+          </plist>
+          EOF
+          
+            # 2. Copy the published .NET binaries
+            cp -R "$PUBLISH_DIR/"* "$APP_DIR/Contents/MacOS/"
+          
+            # 3. Manually copy the native libmsquic.dylib file
+            cp "./QuicFileSharing.Core/runtimes/libmsquic.dylib" "$APP_DIR/Contents/MacOS/"
+          
+            # 4. Ensure the main executable has execution permissions
+            chmod +x "$APP_DIR/Contents/MacOS/$APP_NAME"
+          
+            # 5. Zip the .app bundle (using -ry to preserve symlinks and permissions)
+            cd "${APP_NAME}_${ARCH}"
+            zip -ry "$GITHUB_WORKSPACE/$ZIP_NAME" "${APP_NAME}.app"
+            cd "$GITHUB_WORKSPACE"
+          }
+
+          # --- Build Intel (x64) ---
+          PUBLISH_DIR_X64="$GITHUB_WORKSPACE/QuicFileSharing.GUI/bin/Release/net9.0/osx-x64/publish"
+          dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj -c Release -r osx-x64 --self-contained true /p:UseAppHost=true /p:Version=$VERSION
+          
+          MAC_X64_ZIP="QuicShare-v${VERSION}-mac-x64.zip"
+          create_app_bundle "x64" "$PUBLISH_DIR_X64" "$MAC_X64_ZIP"
+          
+          # --- Build ARM (arm64) ---
+          PUBLISH_DIR_ARM64="$GITHUB_WORKSPACE/QuicFileSharing.GUI/bin/Release/net9.0/osx-arm64/publish"
+          dotnet publish ./QuicFileSharing.GUI/QuicFileSharing.GUI.csproj -c Release -r osx-arm64 --self-contained true /p:UseAppHost=true /p:Version=$VERSION
+          
+          MAC_ARM64_ZIP="QuicShare-v${VERSION}-mac-arm64.zip"
+          create_app_bundle "arm64" "$PUBLISH_DIR_ARM64" "$MAC_ARM64_ZIP"
+          
+          # Export variables for the upload step
+          echo "MAC_X64_ZIP=$MAC_X64_ZIP" >> $GITHUB_OUTPUT
+          echo "MAC_ARM64_ZIP=$MAC_ARM64_ZIP" >> $GITHUB_OUTPUT
+
+      - name: Upload Mac x64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-x64
+          path: ${{ steps.package_mac.outputs.MAC_X64_ZIP }}
+
+      - name: Upload Mac arm64 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-arm64
+          path: ${{ steps.package_mac.outputs.MAC_ARM64_ZIP }}
+
+  upload-to-server:
+    needs: build-mac
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Mac x64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-x64
+          path: .
+
+      - name: Download Mac arm64 Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-arm64
+          path: .
+
+      - name: Upload Mac Binaries to Server
+        run: |
+          MAC_X64_ZIP="${{ needs.build-mac.outputs.MAC_X64_ZIP }}"
+          MAC_ARM64_ZIP="${{ needs.build-mac.outputs.MAC_ARM64_ZIP }}"
+          
+          echo "Uploading Mac assets to server..."
+
+          curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
+            -F "version=${{ github.ref_name }}" \
+            -F "mac_x64=@$MAC_X64_ZIP" \
+            -F "mac_arm64=@$MAC_ARM64_ZIP" \
+            --fail --show-error

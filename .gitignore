@@ -484,3 +484,5 @@ $RECYCLE.BIN/
 *.swp
 
 installer/QuicShareSetup.exe
+
+repomix-output.xml
