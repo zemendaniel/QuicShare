@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Quic;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
@@ -10,9 +11,35 @@ public class Server: QuicPeer
 {
     private QuicListener? listener;
     
-    public async Task StartAsync(bool isIpv6, int localPort, string expectedThumbprint)
-    {
-        var listenEndpoint = new IPEndPoint(isIpv6 ? IPAddress.IPv6Any : IPAddress.Any, localPort);
+    public async Task StartAsync(int localPort, string expectedThumbprint, List<IPAddress> clientIps, List<int> clientPorts)    {
+        Console.WriteLine($"[Server] Starting cross-product hole punching from singular port {localPort}...");
+        
+        using (var udpClient = new UdpClient(AddressFamily.InterNetworkV6))
+        {
+            udpClient.Client.DualMode = true;
+            udpClient.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            udpClient.Client.Bind(new IPEndPoint(IPAddress.IPv6Any, localPort));
+
+            var dummyPacket = new byte[] { 0xFF }; 
+
+            // CROSS-PRODUCT: Loop through every IP and pair it with every Port
+            foreach (var ip in clientIps)
+            {
+                foreach (var port in clientPorts)
+                {
+                    var target = new IPEndPoint(ip, port);
+                    for (int i = 0; i < 3; i++) // 3 packets for redundancy
+                    {
+                        try { await udpClient.SendAsync(dummyPacket, dummyPacket.Length, target); }
+                        catch { /* Ignore unreachable routes */ }
+                    }
+                }
+            }
+        } 
+
+        Console.WriteLine("[Server] Hole punching complete. Transitioning to QUIC Listener...");
+
+        var listenEndpoint = new IPEndPoint(IPAddress.IPv6Any, localPort);
         var serverConnectionOptions = new QuicServerConnectionOptions
         {
             IdleTimeout = connectionTimeout,
@@ -41,13 +68,15 @@ public class Server: QuicPeer
             ApplicationProtocols = [new SslApplicationProtocol("fileShare")],
             ConnectionOptionsCallback = (_, _, _) => ValueTask.FromResult(serverConnectionOptions)
         });
-        Console.WriteLine($"Server listening on {listenEndpoint.Address}:{localPort}");
+        
+        Console.WriteLine($"[Server] QUIC Server actively listening on {listenEndpoint}");
         
         cts = new CancellationTokenSource();
         token = cts.Token;
         
         _ = Task.Run(AcceptConnection, token);
     }
+    
     private async Task AcceptConnection()
     {
         try

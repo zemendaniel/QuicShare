@@ -14,5 +14,8 @@
 		<None Include="runtimes/linux-x64/native/libmsquic.so" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" />
 		<None Include="runtimes/libmsquic.dylib" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" />
 	</ItemGroup>
+	<ItemGroup>
+	  <PackageReference Include="Stun.Net" Version="9.0.1" />
+	</ItemGroup>
     
 </Project>

@@ -107,7 +107,8 @@ public partial class MainWindowViewModel : ViewModelBase
         SetPeerHandlers();
         var client = (peer as Client)!;
         
-        using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
+        // Notice: No more API URLs needed!
+        using var signalingUtils = new SignalingUtils();
         await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
         
         cts = new CancellationTokenSource();
@@ -120,13 +121,12 @@ public partial class MainWindowViewModel : ViewModelBase
             RoomCode = string.Empty;
             LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ? "Something went wrong with your peer." : description)}";
             State = AppState.Lobby;
-
         };
+        
         LobbyText = "Connecting to peer...";
         try
         {
-            var (success, errorMessage) =
-                await Task.Run(() => signaling.ConnectAsync(Role.Client, RoomCode.Trim().ToUpper()), cts.Token);
+            var (success, errorMessage) = await Task.Run(() => signaling.ConnectAsync(Role.Client, RoomCode.Trim().ToUpper()), cts.Token);
             if (success is not true)
             {
                 State = AppState.Lobby;
@@ -134,10 +134,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 return;
             }
 
+            // 1. Gather candidates & reserve port
             var offer = await Task.Run(() => signalingUtils.ConstructOfferAsync(client.Thumbprint), cts.Token);
 
             try
             {
+                // 2. Send Offer
                 await Task.Run(() => signaling.SendAsync(offer, "offer"), cts.Token);
             }
             catch (InvalidOperationException ex)
@@ -146,6 +148,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 LobbyText = $"Could not connect to coordination server: {ex.Message}";
             }
 
+            // 3. Wait for Answer (RACE_START signal)
             var answer = await signaling.AnswerTsc.Task.WaitAsync(cts.Token);
             try
             {
@@ -157,34 +160,25 @@ public partial class MainWindowViewModel : ViewModelBase
                 LobbyText = $"Could not connect to peer: {ex.Message}";
                 return;           
             }
-            if (signalingUtils.PeerIp == null)
+
+            if (signalingUtils.PeerCandidates.Count == 0)
             {
                 await cts.CancelAsync();
-                LobbyText = "Could not connect to peer: Could not agree on IP generation.";
+                LobbyText = "Could not connect to peer: No valid endpoints discovered.";
                 return;
             }
 
             try
             {
-                signalingUtils.CloseUdpSocket();
+                // 4. Release the sockets and race!
+                signalingUtils.ReleaseHoldSockets();
                 await Task.Run(() => client.StartAsync(
-                    signalingUtils.PeerIp,
-                    signalingUtils.PeerPort,
-                    signalingUtils.PeerIp.AddressFamily == AddressFamily.InterNetworkV6,
+                    signalingUtils.PeerCandidates,
                     signalingUtils.ServerThumbprint!,
-                    signalingUtils.OwnPort), cts.Token);
-            }
-            catch (QuicException ex)
-            {
-                await cts.CancelAsync();
-                LobbyText =
-                    $"Could not connect to peer: {ex.Message}. " +
-                    $"Make sure that you have a working internet connection and firewall is not blocking QUIC traffic.";
-                return;
+                    signalingUtils.ReservedPorts), cts.Token);
             }
             catch (Exception ex)
             {
-
                 await cts.CancelAsync();
                 LobbyText = "Could not connect to peer: " + ex.Message;
                 return;
@@ -193,104 +187,101 @@ public partial class MainWindowViewModel : ViewModelBase
             try
             {
                 var isCertValid = await client.GotConnectedToPeer.Task.WaitAsync(cts.Token);
-                if (!isCertValid)
-                    return;
+                if (!isCertValid) return;
             }
-            catch (TaskCanceledException)
-            {
-                // ignored
-            }
+            catch (TaskCanceledException) { /* ignored */ }
 
             ProgressPercentage = 0;
             ProgressText = "";
             State = AppState.InRoom;
             await Task.Run(signaling.CloseAsync, cts.Token);
         }
-        catch (OperationCanceledException)
-        {
-            // ignored
-        }
+        catch (OperationCanceledException) { /* ignored */ }
     }
 
     [RelayCommand]
-    private async Task CreateRoom()
+private async Task CreateRoom()
+{
+    peer = new Server();
+    SetPeerHandlers();
+
+    LobbyText = "Connecting to coordination server...";
+    var server = (peer as Server)!;
+    cts = new CancellationTokenSource();
+    
+    // Notice: No more API URLs needed!
+    using var signalingUtils = new SignalingUtils(appConfig.PortV4);
+    await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
+    
+    signaling.OnDisconnected += async (_, description) =>
     {
-        peer = new Server();
-        SetPeerHandlers();
+        if (server.GotConnectedToPeer.Task.IsCompleted) return;
+        if (cts.Token.IsCancellationRequested) return;
+        await cts.CancelAsync();
+        RoomCode = string.Empty;
+        LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ? "The signaling was closed before your peer could join." : description)}";
+        State = AppState.Lobby;            
+    };
+    
+    var (success, errorMessage) = await Task.Run(() => signaling.ConnectAsync(Role.Server), cts.Token);
+    if (success is not true)
+    { 
+        State = AppState.Lobby; 
+        LobbyText = $"Could not connect to coordination server: {errorMessage}";
+        return;
+    }        
+    var info = await signaling.RoomInfoTcs.Task.WaitAsync(cts.Token);
+    
+    State = AppState.WaitingForConnection;
+    RoomCode = info.id;
 
-        LobbyText = "Connecting to coordination server...";
-        var server = (peer as Server)!;
-        cts = new CancellationTokenSource();
-        using var signalingUtils = new SignalingUtils(appConfig.ApiV4, appConfig.ApiV6);
-        await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
-        
-        signaling.OnDisconnected += async (_, description) =>
-        {
-            if (server.GotConnectedToPeer.Task.IsCompleted) return;
-            if (cts.Token.IsCancellationRequested) return;
-            await cts.CancelAsync();
-            RoomCode = string.Empty;
-            LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ?
-                "The signaling was closed before your peer could join." : description)}";
-            State = AppState.Lobby;            
-        };
-        var (success, errorMessage) = await Task.Run(() => signaling.ConnectAsync(Role.Server), cts.Token);
-        if (success is not true)
-        { 
-            State = AppState.Lobby; 
-            LobbyText = $"Could not connect to coordination server: {errorMessage}";
-            return;
-        }        
-        var info = await signaling.RoomInfoTcs.Task.WaitAsync(cts.Token);
-        
-        State = AppState.WaitingForConnection;
-        RoomCode = info.id;
-
-        var offer = await signaling.OfferTcs.Task.WaitAsync(cts.Token);;
-        string answer;
-        try
-        {
-            answer = await Task.Run(() => 
-                signalingUtils.ConstructAnswerAsync(offer, server.Thumbprint, ForceIPv4, appConfig.PortV4), cts.Token);
-        }
-        catch (InvalidOperationException ex)
-        {
-            await cts.CancelAsync();
-            State = AppState.Lobby;
-            LobbyText = $"Failed to accept connection: {ex.Message}";
-            return;       
-        }
-
-        signalingUtils.CloseUdpSocket();
-        await Task.Run(() => server.StartAsync(!ForceIPv4, signalingUtils.OwnPort ?? appConfig.PortV4,
-            signalingUtils.ClientThumbprint!), cts.Token);
-        
-        try
-        {
-            await Task.Run(() => signaling.SendAsync(answer, "answer"), cts.Token);
-        }
-        catch (InvalidOperationException ex)
-        {
-            State = AppState.Lobby;
-            LobbyText = $"Could not connect to coordination server: {ex.Message}";
-        }
-
-        try
-        {
-            var isCertValid = await server.GotConnectedToPeer.Task.WaitAsync(cts.Token);
-            if (!isCertValid)
-                return;
-        }
-        catch (TaskCanceledException)
-        {
-            // ignored
-        }
-        
-        ProgressPercentage = 0;
-        ProgressText = "";
-        State = AppState.InRoom;
-        await Task.Run(signaling.CloseAsync, CancellationToken.None);
+    // 1. Wait for Offer from Client
+    var offer = await signaling.OfferTcs.Task.WaitAsync(cts.Token);
+    string answer;
+    try
+    {
+        // 2. Gather candidates & reserve port
+        answer = await Task.Run(() => signalingUtils.ConstructAnswerAsync(offer, server.Thumbprint), cts.Token);
     }
+    catch (Exception ex)
+    {
+        await cts.CancelAsync();
+        State = AppState.Lobby;
+        LobbyText = $"Failed to accept connection: {ex.Message}";
+        return;       
+    }
+
+    // 3. Release the socket and start the Server (This fires UDP punch packets, then listens)
+    signalingUtils.ReleaseHoldSockets();
+    await Task.Run(() => server.StartAsync(
+        signalingUtils.LocalPort, 
+        signalingUtils.ClientThumbprint!, 
+        signalingUtils.PeerIps,
+        signalingUtils.PeerPorts), cts.Token);
+    
+    try
+    {
+        // 4. Send Answer (RACE_START signal)
+        await Task.Run(() => signaling.SendAsync(answer, "answer"), cts.Token);
+    }
+    catch (InvalidOperationException ex)
+    {
+        State = AppState.Lobby;
+        LobbyText = $"Could not connect to coordination server: {ex.Message}";
+    }
+
+    try
+    {
+        var isCertValid = await server.GotConnectedToPeer.Task.WaitAsync(cts.Token);
+        if (!isCertValid) return;
+    }
+    catch (TaskCanceledException) { /* ignored */ }
+    
+    ProgressPercentage = 0;
+    ProgressText = "";
+    State = AppState.InRoom;
+    await Task.Run(signaling.CloseAsync, CancellationToken.None);
+}
 
     [RelayCommand]
     private async Task SendFile(Window window) 
