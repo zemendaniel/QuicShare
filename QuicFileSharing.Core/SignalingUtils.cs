@@ -126,8 +126,20 @@ public class SignalingUtils : IDisposable
 
         if (stunEp != null)
         {
+            // 1. Add the exact STUN translation (useful for Hole Punching if no port forwarding exists)
             serverCandidates.Add(stunEp);
             Console.WriteLine($"[ICE] Server STUN Public Endpoint: {stunEp}");
+
+            // 2. Explicit Port Forwarding fallback!
+            // If the user configured a port, and STUN reported a different port, 
+            // the router might have shifted the outbound packet. We explicitly tell the 
+            // Client to try the configured port too.
+            if (_configuredPort > 0 && stunEp.Port != _configuredPort)
+            {
+                var forwardedEp = new IPEndPoint(stunEp.Address, _configuredPort);
+                serverCandidates.Add(forwardedEp);
+                Console.WriteLine($"[ICE] Server Port Forwarding Endpoint: {forwardedEp}");
+            }
         }
 
         var answer = new Answer
