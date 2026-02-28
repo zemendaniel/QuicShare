@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Net.Quic;
 using System.Net.Sockets;
 using System.Text;
@@ -175,7 +176,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 await Task.Run(() => client.StartAsync(
                     signalingUtils.PeerCandidates,
                     signalingUtils.ServerThumbprint!,
-                    signalingUtils.ReservedPorts), cts.Token);
+                    signalingUtils.ReservedPortsLocal.ToList()), cts.Token);
             }
             catch (Exception ex)
             {

@@ -39,6 +39,7 @@ public class Client : QuicPeer
         if (connection == null)
         {
             GotConnectedToPeer.SetResult(false);
+            // todo change text
             CallOnDisconnected("Failed to connect to peer. NAT pinhole may have failed or peer is unreachable.\nCheck your firewall or try configuring IPv4 Port Forwarding.");
             await StopAsync();
             return;
@@ -61,6 +62,7 @@ public class Client : QuicPeer
     }
     private async Task<QuicConnection?> RaceConnectionsAsync(List<IPEndPoint> candidates, List<int> reservedPorts, SslClientAuthenticationOptions authOptions)
     {
+        // todo make sure there are no race conditions
         using var raceCts = CancellationTokenSource.CreateLinkedTokenSource(token);
         raceCts.CancelAfter(TimeSpan.FromSeconds(10)); 
         
@@ -94,7 +96,7 @@ public class Client : QuicPeer
             {
                 var conn = await completedTask; 
                 if (conn == null) continue;
-
+                // todo what is this?
                 if (Interlocked.CompareExchange(ref winningConnection, conn, null) == null)
                 {
                     await raceCts.CancelAsync();

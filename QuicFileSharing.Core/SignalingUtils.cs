@@ -46,7 +46,8 @@ public class SignalingUtils : IDisposable
     };
 
     // Client-side properties
-    public List<int> ReservedPorts { get; private set; } = [];
+    public HashSet<int> ReservedPortsLocal { get; private set; } = [];
+    public List<int> ReservedPortsExternal { get; private set; } = [];
     
     // Server-side properties
     public List<IPAddress> PeerIps { get; private set; } = [];
@@ -61,44 +62,38 @@ public class SignalingUtils : IDisposable
     private readonly List<Socket> holdSockets = [];
 
     // ====== CLIENT SIDE GATHERING ======
-    public async Task<string> ConstructOfferAsync(string thumbprint, int poolSize = 10) // 10 ports is plenty for the race
+    public async Task<string> ConstructOfferAsync(string thumbprint) 
     {
         ClientThumbprint = thumbprint;
         var ips = new HashSet<IPAddress>();
-        var ports = new HashSet<int>();
+        ReservedPortsLocal = new ();
+        ReservedPortsExternal = new();
 
         // 1. Gather local LAN IPs
         foreach (var ip in GetLocalIps())
         {
-            ips.Add(ip);
+            ips.Add(ip);    // we drop duplicates
+            var port = ReservePort();
+            ReservedPortsLocal.Add(port);
+            ReservedPortsExternal.Add(port);
         }
-
-        // 2. Concurrently reserve ports and query STUN
-        var stunTasks = new List<Task<(int LocalPort, IPEndPoint? StunEp, Socket HoldSocket)>>();
-        for (int i = 0; i < poolSize; i++)
+        
+        var (stunLocalPort, stunEp, stunSocket) = await ReservePortAndStunAsync(0);
+        holdSockets.Add(stunSocket);
+        
+        ReservedPortsLocal.Add(stunLocalPort);
+        ReservedPortsExternal.Add(stunLocalPort);
+        
+        if (stunEp != null)
         {
-            stunTasks.Add(ReservePortAndStunAsync(0)); // Dynamic ports for Client
+            ips.Add(stunEp.Address);
+            ReservedPortsExternal.Add(stunEp.Port); 
         }
-
-        var results = await Task.WhenAll(stunTasks);
-
-        foreach (var (localPort, stunEp, socket) in results)
-        {
-            ReservedPorts.Add(localPort);
-            ports.Add(localPort);
-            holdSockets.Add(socket);
-
-            if (stunEp != null)
-            {
-                ips.Add(stunEp.Address);
-                ports.Add(stunEp.Port); // Include the NAT translated port in the pool
-            }
-        }
-
+        
         var offer = new Offer
         {
             ClientIps = ips.Select(ip => ip.ToString()).ToList(),
-            ClientPorts = ports.ToList(),
+            ClientPorts = ReservedPortsExternal.Distinct().ToList(),
             ClientThumbprint = thumbprint
         };
         
@@ -143,6 +138,43 @@ public class SignalingUtils : IDisposable
 
         return JsonSerializer.Serialize(answer);
     }
+    
+    private async Task<(int LocalPort, IPEndPoint? PublicEp, Socket HoldSocket)> ReservePortAndStunAsync(int targetPort)
+    {
+        int actualPort;
+        using (var tempSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
+        {
+            tempSocket.DualMode = true;
+            tempSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, targetPort));
+            actualPort = ((IPEndPoint)tempSocket.LocalEndPoint!).Port;
+        }
+
+        var stunEp = await GetStunEndpointAsync(actualPort);
+
+        var holdSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+        holdSocket.DualMode = true;
+        holdSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        holdSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, actualPort));
+
+        return (actualPort, stunEp, holdSocket);
+    }
+
+    private async Task<IPEndPoint?> GetStunEndpointAsync(int port)
+    {
+        try
+        {
+            var stunServerAddresses = await Dns.GetHostAddressesAsync("stun.l.google.com");
+            if (stunServerAddresses.Length == 0) return null;
+
+            var stunServer = new IPEndPoint(stunServerAddresses[0], 19302);
+            var localEndpoint = new IPEndPoint(IPAddress.Any, port);
+
+            using var stunClient = new StunClient5389UDP(stunServer, localEndpoint);
+            await stunClient.QueryAsync();
+            return stunClient.State.PublicEndPoint;
+        }
+        catch { return null; }
+    }
 
     public void ProcessAnswer(string answerJson)
     {
@@ -185,45 +217,21 @@ public class SignalingUtils : IDisposable
         }
         return ips;
     }
-
-    // Helper: Safely binds, gets STUN, and re-binds to hold the NAT pinhole
-    private async Task<(int LocalPort, IPEndPoint? PublicEp, Socket HoldSocket)> ReservePortAndStunAsync(int targetPort)
+    private int ReservePort()
     {
-        int actualPort;
-        using (var tempSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
-        {
-            tempSocket.DualMode = true;
-            tempSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, targetPort));
-            actualPort = ((IPEndPoint)tempSocket.LocalEndPoint!).Port;
-        }
-
-        var stunEp = await GetStunEndpointAsync(actualPort);
-
         var holdSocket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
         holdSocket.DualMode = true;
         holdSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        holdSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, actualPort));
-
-        return (actualPort, stunEp, holdSocket);
-    }
-
-    private async Task<IPEndPoint?> GetStunEndpointAsync(int port)
-    {
-        try
+        holdSocket.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
+        
+        holdSockets.Add(holdSocket);
+        if (holdSocket.LocalEndPoint is IPEndPoint localEndPoint)
         {
-            var stunServerAddresses = await Dns.GetHostAddressesAsync("stun.l.google.com");
-            if (stunServerAddresses.Length == 0) return null;
-
-            var stunServer = new IPEndPoint(stunServerAddresses[0], 19302);
-            var localEndpoint = new IPEndPoint(IPAddress.Any, port);
-
-            using var stunClient = new StunClient5389UDP(stunServer, localEndpoint);
-            await stunClient.QueryAsync();
-            return stunClient.State.PublicEndPoint;
+            return localEndPoint.Port;
         }
-        catch { return null; }
+        return 0;
     }
-
+    
     private bool IsApipaOrLinkLocal(IPAddress address)
     {
         if (address.AddressFamily == AddressFamily.InterNetwork)
