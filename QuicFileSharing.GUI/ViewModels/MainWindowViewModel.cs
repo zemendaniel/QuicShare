@@ -41,15 +41,13 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string progressText = string.Empty;
     [ObservableProperty]
-    private bool forceIPv4;
+    private bool useFixedPort;
     [ObservableProperty]
-    private string portV4Text = string.Empty;
-    [ObservableProperty] 
-    private string apiV4Text = string.Empty;
-    [ObservableProperty] 
-    private string apiV6Text = string.Empty;
+    private string fixedPortText = string.Empty;
     [ObservableProperty]
     private string signalingServerText = string.Empty;
+    [ObservableProperty]
+    private string stunServerText = string.Empty;
     [ObservableProperty]
     private string settingsText = string.Empty;
     [ObservableProperty]
@@ -88,11 +86,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private void LoadConfig()
     {
-        ForceIPv4 = appConfig.ForceIPv4;
-        PortV4Text = appConfig.PortV4.ToString();
-        ApiV4Text = appConfig.ApiV4;
-        ApiV6Text = appConfig.ApiV6;
+        UseFixedPort = appConfig.UseFixedPort;
+        FixedPortText = appConfig.PortV4.ToString();
         SignalingServerText = appConfig.SignalingServer;
+        StunServerText = appConfig.StunServer;
     }
     
     [RelayCommand]
@@ -107,8 +104,7 @@ public partial class MainWindowViewModel : ViewModelBase
         SetPeerHandlers();
         var client = (peer as Client)!;
         
-        // Notice: No more API URLs needed!
-        using var signalingUtils = new SignalingUtils();
+        using var signalingUtils = new SignalingUtils(appConfig.StunServer);
         await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
         
         cts = new CancellationTokenSource();
@@ -210,7 +206,11 @@ private async Task CreateRoom()
     cts = new CancellationTokenSource();
     
     // Notice: No more API URLs needed!
-    using var signalingUtils = new SignalingUtils(appConfig.PortV4);
+    using var signalingUtils = new SignalingUtils(
+        appConfig.StunServer, 
+        appConfig.PortV4, 
+        appConfig.UseFixedPort
+    );
     await using var signaling = new WebSocketSignaling(appConfig.SignalingServer);
     
     signaling.OnDisconnected += async (_, description) =>
@@ -459,17 +459,24 @@ private async Task CreateRoom()
     {
         SettingsText = "";
         int port;
-        if (!string.IsNullOrWhiteSpace(PortV4Text))
+        if (UseFixedPort)
         {
-            if (!int.TryParse(PortV4Text, out port) || port < 1 || port > 65535)
+            if (string.IsNullOrWhiteSpace(FixedPortText) || !int.TryParse(FixedPortText, out port) || port < 1 || port > 65535)
             {
-                SettingsText = "Invalid port number. Must be between 1 and 65535.";
+                SettingsText = "Invalid fixed port number. Must be between 1 and 65535.";
                 return;
             }
         }
         else
         {
-            port = new AppConfig().PortV4;
+            if (!string.IsNullOrWhiteSpace(FixedPortText) && int.TryParse(FixedPortText, out var p) && p >= 1 && p <= 65535)
+            {
+                port = p;
+            }
+            else
+            {
+                port = new AppConfig().PortV4;
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(SignalingServerText) &&
@@ -480,35 +487,21 @@ private async Task CreateRoom()
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(ApiV6Text) && !StaticUtils.IsValidHttpUrl(ApiV6Text))
-        {
-            SettingsText = "Invalid API URL for IPv6. " +
-                           "Make sure it starts with http:// or https:// and that the host, port and path are correct.";
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(ApiV4Text) && !StaticUtils.IsValidHttpUrl(ApiV4Text))
-        {
-            SettingsText = "Invalid API URL for IPv4. " +
-                           "Make sure it starts with http:// or https:// and that the host, port and path are correct.";
-            return;
-        }
-
         var defaults = new AppConfig(); 
 
         var config = new AppConfig
         {
             PortV4 = port,
-            ForceIPv4 = ForceIPv4,
+            UseFixedPort = UseFixedPort,
             SignalingServer = string.IsNullOrWhiteSpace(SignalingServerText) 
                 ? defaults.SignalingServer 
                 : SignalingServerText,
-            ApiV6 = string.IsNullOrWhiteSpace(ApiV6Text) 
-                ? defaults.ApiV6 
-                : ApiV6Text,
-            ApiV4 = string.IsNullOrWhiteSpace(ApiV4Text) 
-                ? defaults.ApiV4 
-                : ApiV4Text
+            StunServer = string.IsNullOrWhiteSpace(StunServerText)
+                ? defaults.StunServer
+                : StunServerText,
+            // Preserve paths
+            SenderPath = appConfig.SenderPath,
+            ReceiverPath = appConfig.ReceiverPath
         };
 
         DataStore.Save(config);

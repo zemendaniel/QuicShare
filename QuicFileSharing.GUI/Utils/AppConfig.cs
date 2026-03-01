@@ -8,48 +8,43 @@ namespace QuicFileSharing.GUI.Utils;
 public class AppConfig
 {
     public int PortV4 { get; set; }
-    public bool ForceIPv4 { get; set; }
+    public bool UseFixedPort { get; set; }
     public string SignalingServer { get; set; }
-    public string ApiV6 { get; set; }
-    public string ApiV4 { get; set; }
+    public string StunServer { get; set; }
     public string SenderPath { get; set; }
     public string ReceiverPath { get; set; }
 
-    private const int DefaultPortV4 = 55441;
-    private const bool DefaultForceIPv4 = false;
+    private const int DefaultPort = 39805;
+    private const bool DefaultUseFixedPort = false;
     private const string DefaultSignalingServer = "wss://quic-share.zemendaniel.hu";
-    private const string DefaultApiV6 = "https://ipv6.seeip.org";
-    private const string DefaultApiV4 = "https://api.ipify.org";
+    private const string DefaultStunServer = "stun.l.google.com:19302";
     private const string DefaultSenderPath = "";
     private static readonly string DefaultReceiverPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
     public AppConfig(
         int? portV4 = null,
-        bool? forceIPv4 = null,
+        bool? useFixedPort = null,
         string? signalingServer = null,
-        string? apiV6 = null,
-        string? apiV4 = null,
+        string? stunServer = null,
         string? senderPath = null,
         string? receiverPath = null
         )
     {
-        PortV4 = portV4 ?? DefaultPortV4;
-        ForceIPv4 = forceIPv4 ?? DefaultForceIPv4;
+        PortV4 = portV4 ?? DefaultPort;
+        UseFixedPort = useFixedPort ?? DefaultUseFixedPort;
         SignalingServer = string.IsNullOrWhiteSpace(signalingServer) ? DefaultSignalingServer : signalingServer;
-        ApiV6 = string.IsNullOrWhiteSpace(apiV6) ? DefaultApiV6 : apiV6;
-        ApiV4 = string.IsNullOrWhiteSpace(apiV4) ? DefaultApiV4 : apiV4;
+        StunServer = string.IsNullOrWhiteSpace(stunServer) ? DefaultStunServer : stunServer;
         SenderPath = string.IsNullOrWhiteSpace(senderPath) ? DefaultSenderPath : senderPath;
         ReceiverPath = string.IsNullOrWhiteSpace(receiverPath) ? DefaultReceiverPath : receiverPath;
     }
     
     [JsonConstructor]
-    public AppConfig(int PortV4, bool ForceIPv4, string SignalingServer, string ApiV6, string ApiV4, string SenderPath, string ReceiverPath)
+    public AppConfig(int PortV4, bool UseFixedPort, string SignalingServer, string StunServer, string SenderPath, string ReceiverPath)
     {
         this.PortV4 = PortV4;
-        this.ForceIPv4 = ForceIPv4;
+        this.UseFixedPort = UseFixedPort;
         this.SignalingServer = SignalingServer;
-        this.ApiV6 = ApiV6;
-        this.ApiV4 = ApiV4;
+        this.StunServer = StunServer;
         this.SenderPath = SenderPath;
         this.ReceiverPath = ReceiverPath;
     }

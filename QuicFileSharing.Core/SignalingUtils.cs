@@ -34,10 +34,16 @@ public class SignalingMessage
 public class SignalingUtils : IDisposable
 {
     private readonly int _configuredPort;
+    private readonly bool _useFixedPort;
+    private readonly string _stunServer;
+
+    private const int MinPortAmount = 5;
     
-    public SignalingUtils(int configuredPort = 0)
+    public SignalingUtils(string stunServer, int configuredPort = 0, bool useFixedPort = false)
     {
         _configuredPort = configuredPort;
+        _useFixedPort = useFixedPort;
+        _stunServer = stunServer;
     }
     
     public static readonly JsonSerializerOptions Options = new()
@@ -61,21 +67,25 @@ public class SignalingUtils : IDisposable
     private readonly List<Socket> holdSockets = [];
 
     // ====== CLIENT SIDE GATHERING ======
-    public async Task<string> ConstructOfferAsync(string thumbprint, int poolSize = 10) // 10 ports is plenty for the race
+    public async Task<string> ConstructOfferAsync(string thumbprint, int poolSize = 0) 
     {
         ClientThumbprint = thumbprint;
         var ips = new HashSet<IPAddress>();
         var ports = new HashSet<int>();
 
         // 1. Gather local LAN IPs
-        foreach (var ip in GetLocalIps())
+        var localIps = GetLocalIps();
+        foreach (var ip in localIps)
         {
             ips.Add(ip);
         }
 
         // 2. Concurrently reserve ports and query STUN
+        // If poolSize is 0 (default), reserve as many ports as we have local IPs
+        int portsToReserve = poolSize > 0 ? poolSize : Math.Max(MinPortAmount, localIps.Count);
+        
         var stunTasks = new List<Task<(int LocalPort, IPEndPoint? StunEp, Socket HoldSocket)>>();
-        for (int i = 0; i < poolSize; i++)
+        for (int i = 0; i < portsToReserve; i++)
         {
             stunTasks.Add(ReservePortAndStunAsync(0)); // Dynamic ports for Client
         }
@@ -116,8 +126,11 @@ public class SignalingUtils : IDisposable
         PeerPorts = offer.ClientPorts;
         ServerThumbprint = serverThumbprint;
 
-        // Server only reserves ONE port (Configured Port or Dynamic)
-        var (localPort, stunEp, socket) = await ReservePortAndStunAsync(_configuredPort);
+        // Server only reserves ONE port
+        // Use configured port only if _useFixedPort is true, otherwise 0 (dynamic)
+        int portToBind = _useFixedPort ? _configuredPort : 0;
+        
+        var (localPort, stunEp, socket) = await ReservePortAndStunAsync(portToBind);
         LocalPort = localPort;
         holdSockets.Add(socket);
 
@@ -211,10 +224,16 @@ public class SignalingUtils : IDisposable
     {
         try
         {
-            var stunServerAddresses = await Dns.GetHostAddressesAsync("stun.l.google.com");
+            if (string.IsNullOrWhiteSpace(_stunServer)) return null;
+
+            var parts = _stunServer.Split(':');
+            string host = parts[0];
+            int stunPort = parts.Length > 1 && int.TryParse(parts[1], out int p) ? p : 19302;
+            
+            var stunServerAddresses = await Dns.GetHostAddressesAsync(host);
             if (stunServerAddresses.Length == 0) return null;
 
-            var stunServer = new IPEndPoint(stunServerAddresses[0], 19302);
+            var stunServer = new IPEndPoint(stunServerAddresses[0], stunPort);
             var localEndpoint = new IPEndPoint(IPAddress.Any, port);
 
             using var stunClient = new StunClient5389UDP(stunServer, localEndpoint);

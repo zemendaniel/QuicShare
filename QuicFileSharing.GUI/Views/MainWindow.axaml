@@ -370,9 +370,9 @@
         Leave empty and save to use default values.
     </TextBlock>
 
-    <!-- First row: Force IPv4 and Port -->
+    <!-- First row: Fixed Port -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="50">
-        <CheckBox Content="Force IPv4?" IsChecked="{Binding ForceIPv4}" Foreground="{DynamicResource TextBrush}"
+        <CheckBox Content="Use Fixed Port?" IsChecked="{Binding UseFixedPort}" Foreground="{DynamicResource TextBrush}"
                   Effect="{DynamicResource TextShadow}"
                   FontWeight="Bold"
                   VerticalAlignment="Center"
@@ -383,20 +383,19 @@
             <TextBlock Foreground="{DynamicResource TextBrush}"
                        Effect="{DynamicResource TextShadow}"
                        Margin="0, 0, 0, 6"
-                       FontWeight="Bold">IPv4 port (1-65535):</TextBlock>
-            <NumericUpDown Minimum="1" Maximum="65535" Value="{Binding PortV4Text}"
-                           Increment="1" FormatString="0"
-                           IsEnabled="{Binding ForceIPv4}"
+                       FontWeight="Bold">Fixed Port (1-65535):</TextBlock>
+            <TextBox Text="{Binding FixedPortText}"
+                           IsEnabled="{Binding UseFixedPort}"
                            FontWeight="Bold"
                            ClipToBounds="True"
                            Foreground="{DynamicResource PrimaryBrush}" 
                            Background="{DynamicResource TextBrush}" 
                            CornerRadius="12" Padding="12,6" Width="140">
-            </NumericUpDown>
+            </TextBox>
         </StackPanel>
     </StackPanel>
 
-    <!-- Second row: APIs -->
+    <!-- Second row: Servers -->
     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20">
         <StackPanel Spacing="4">
             <TextBlock Foreground="{DynamicResource TextBrush}"
@@ -409,33 +408,22 @@
                      CornerRadius="12" Padding="8,4" 
                      Effect="{DynamicResource DropShadow}"
                      FontWeight="Bold"
-                     TextAlignment="Center"/>
+                     TextAlignment="Center"
+                     Width="250"/>
         </StackPanel>
 
         <StackPanel Spacing="4">
             <TextBlock Foreground="{DynamicResource TextBrush}"
-                       FontWeight="Bold" HorizontalAlignment="Center">IPv6 echo API:</TextBlock>
-            <TextBox Text="{Binding ApiV6Text}" 
+                       FontWeight="Bold" HorizontalAlignment="Center">STUN Server:</TextBlock>
+            <TextBox Text="{Binding StunServerText}" 
                      Foreground="{DynamicResource PrimaryBrush}" 
                      Background="{DynamicResource TextBrush}" 
                      BorderBrush="{DynamicResource AccentBrush}" 
                      CornerRadius="12" Padding="8,4" 
                      Effect="{DynamicResource DropShadow}"
                      FontWeight="Bold"
-                     TextAlignment="Center"/>
-        </StackPanel>
-
-        <StackPanel Spacing="4">
-            <TextBlock Foreground="{DynamicResource TextBrush}"
-                       FontWeight="Bold" TextAlignment="Center">IPv4 echo API:</TextBlock>
-            <TextBox Text="{Binding ApiV4Text}" 
-                     Foreground="{DynamicResource PrimaryBrush}" 
-                     Background="{DynamicResource TextBrush}" 
-                     BorderBrush="{DynamicResource AccentBrush}" 
-                     CornerRadius="12" Padding="8,4" 
-                     Effect="{DynamicResource DropShadow}"
                      TextAlignment="Center"
-                     FontWeight="Bold"/>
+                     Width="250"/>
         </StackPanel>
     </StackPanel>
 
