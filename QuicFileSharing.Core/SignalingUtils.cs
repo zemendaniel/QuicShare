@@ -240,8 +240,8 @@ public class SignalingUtils : IDisposable
         {
             if (string.IsNullOrWhiteSpace(_stunServer)) 
             {
-                 Console.WriteLine("[STUN] No STUN server configured.");
-                 return null;
+                Console.WriteLine("[STUN] No STUN server configured.");
+                return null;
             }
 
             var parts = _stunServer.Split(':');
@@ -249,22 +249,28 @@ public class SignalingUtils : IDisposable
             int stunPort = parts.Length > 1 && int.TryParse(parts[1], out int p) ? p : 19302;
             
             var stunServerAddresses = await Dns.GetHostAddressesAsync(host);
-            if (stunServerAddresses.Length == 0) 
+            
+            // FORCE IPv4: STUN over IPv6 is rarely needed since IPv6 doesn't use NAT.
+            // Furthermore, binding IPAddress.Any (IPv4) to an IPv6 STUN server causes a socket crash.
+            var ipv4Server = stunServerAddresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+            
+            if (ipv4Server == null) 
             {
-                 Console.WriteLine($"[STUN] Could not resolve host: {host}");
-                 return null;
+                Console.WriteLine($"[STUN] Could not resolve IPv4 address for host: {host}");
+                return null;
             }
 
-            var stunServer = new IPEndPoint(stunServerAddresses[0], stunPort);
+            var stunServer = new IPEndPoint(ipv4Server, stunPort);
             var localEndpoint = new IPEndPoint(IPAddress.Any, port);
 
             using var stunClient = new StunClient5389UDP(stunServer, localEndpoint);
             await stunClient.QueryAsync();
             var ep = stunClient.State.PublicEndPoint;
+            
             if (ep != null)
-                 Console.WriteLine($"[STUN] Success: {localEndpoint} -> {ep}");
+                Console.WriteLine($"[STUN] Success: {localEndpoint} -> {ep}");
             else
-                 Console.WriteLine($"[STUN] Query failed or timeout for {localEndpoint}");
+                Console.WriteLine($"[STUN] Query failed or timeout for {localEndpoint}");
             
             return ep;
         }
