@@ -102,6 +102,11 @@ public class SignalingUtils : IDisposable
             {
                 ips.Add(stunEp.Address);
                 ports.Add(stunEp.Port); // Include the NAT translated port in the pool
+                Console.WriteLine($"[Client-Offer] Gathered STUN EP: {stunEp}");
+            }
+            else
+            {
+                Console.WriteLine($"[Client-Offer] Failed to gather STUN for local port {localPort}");
             }
         }
 
@@ -112,6 +117,7 @@ public class SignalingUtils : IDisposable
             ClientThumbprint = thumbprint
         };
         
+        Console.WriteLine($"[Client-Offer] Generated Offer with {ips.Count} IPs and {ports.Count} Ports.");
         return JsonSerializer.Serialize(offer);
     }
 
@@ -125,6 +131,8 @@ public class SignalingUtils : IDisposable
         PeerIps = offer.ClientIps.Select(IPAddress.Parse).ToList();
         PeerPorts = offer.ClientPorts;
         ServerThumbprint = serverThumbprint;
+        
+        Console.WriteLine($"[Server-Answer] Received Offer from Client with {PeerIps.Count} IPs and {PeerPorts.Count} Ports.");
 
         // Server only reserves ONE port
         // Use configured port only if _useFixedPort is true, otherwise 0 (dynamic)
@@ -147,6 +155,10 @@ public class SignalingUtils : IDisposable
             serverCandidates.Add(stunEp);
             Console.WriteLine($"[ICE] Server STUN Public Endpoint: {stunEp}");
         }
+        else
+        {
+             Console.WriteLine("[ICE] Server STUN failed or returned null.");
+        }
 
         var answer = new Answer
         {
@@ -154,6 +166,7 @@ public class SignalingUtils : IDisposable
             ServerThumbprint = serverThumbprint,
         };
 
+        Console.WriteLine($"[Server-Answer] Generated Answer with {serverCandidates.Count} candidates.");
         return JsonSerializer.Serialize(answer);
     }
 
@@ -171,6 +184,7 @@ public class SignalingUtils : IDisposable
                 PeerCandidates.Add(endpoint);
             }
         }
+        Console.WriteLine($"[Client-Process] Processed Answer. Found {PeerCandidates.Count} valid candidates.");
     }
 
     private List<IPAddress> GetLocalIps()
@@ -224,23 +238,41 @@ public class SignalingUtils : IDisposable
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(_stunServer)) return null;
+            if (string.IsNullOrWhiteSpace(_stunServer)) 
+            {
+                 Console.WriteLine("[STUN] No STUN server configured.");
+                 return null;
+            }
 
             var parts = _stunServer.Split(':');
             string host = parts[0];
             int stunPort = parts.Length > 1 && int.TryParse(parts[1], out int p) ? p : 19302;
             
             var stunServerAddresses = await Dns.GetHostAddressesAsync(host);
-            if (stunServerAddresses.Length == 0) return null;
+            if (stunServerAddresses.Length == 0) 
+            {
+                 Console.WriteLine($"[STUN] Could not resolve host: {host}");
+                 return null;
+            }
 
             var stunServer = new IPEndPoint(stunServerAddresses[0], stunPort);
             var localEndpoint = new IPEndPoint(IPAddress.Any, port);
 
             using var stunClient = new StunClient5389UDP(stunServer, localEndpoint);
             await stunClient.QueryAsync();
-            return stunClient.State.PublicEndPoint;
+            var ep = stunClient.State.PublicEndPoint;
+            if (ep != null)
+                 Console.WriteLine($"[STUN] Success: {localEndpoint} -> {ep}");
+            else
+                 Console.WriteLine($"[STUN] Query failed or timeout for {localEndpoint}");
+            
+            return ep;
         }
-        catch { return null; }
+        catch (Exception ex)
+        { 
+            Console.WriteLine($"[STUN] Error: {ex.Message}");
+            return null; 
+        }
     }
 
     private bool IsApipaOrLinkLocal(IPAddress address)

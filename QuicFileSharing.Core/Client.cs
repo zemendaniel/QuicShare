@@ -24,17 +24,23 @@ public class Client : QuicPeer
             {
                 if (certificate is X509Certificate2 serverCert)
                 {
-                    return string.Equals(serverCert.Thumbprint, expectedThumbprint, StringComparison.OrdinalIgnoreCase);
+                    bool isValid = string.Equals(serverCert.Thumbprint, expectedThumbprint, StringComparison.OrdinalIgnoreCase);
+                    Console.WriteLine($"[Client] Verifying server cert thumbprint: {serverCert.Thumbprint} Expected: {expectedThumbprint} Match: {isValid}");
+                    return isValid;
                 }
+                Console.WriteLine("[Client] Server certificate is null or invalid type.");
                 return false;
             }
         };
 
         try
         {
+            Console.WriteLine("[Client] Starting connection race...");
             connection = await RaceConnectionsAsync(serverCandidates, reservedPorts, clientAuthOptions);
         }
-        catch (OperationCanceledException) { /* Handled */ }
+        catch (OperationCanceledException) { 
+             Console.WriteLine("[Client] Race cancelled.");
+        }
 
         if (connection == null)
         {
@@ -47,11 +53,13 @@ public class Client : QuicPeer
         Console.WriteLine($"[Client] RACE WON! Connected to {connection.RemoteEndPoint}");
 
         // 2. Open Streams
+        Console.WriteLine("[Client] Opening control stream...");
         controlStream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, token);
         await controlStream.WriteAsync(new byte[] { 0x01 }, token);
         SetControlStream();
         _ = Task.Run(ControlLoopAsync, token);
         
+        Console.WriteLine("[Client] Opening file stream...");
         fileStream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, token);
         await fileStream.WriteAsync(new byte[] { 0x02 }, token); 
         SetFileStream();
@@ -61,6 +69,7 @@ public class Client : QuicPeer
     }
     private async Task<QuicConnection?> RaceConnectionsAsync(List<IPEndPoint> candidates, List<int> reservedPorts, SslClientAuthenticationOptions authOptions)
     {
+        Console.WriteLine($"[Client] Racing {candidates.Count} candidates with {reservedPorts.Count} local ports.");
         using var raceCts = CancellationTokenSource.CreateLinkedTokenSource(token);
         raceCts.CancelAfter(TimeSpan.FromSeconds(10)); 
         
@@ -94,6 +103,8 @@ public class Client : QuicPeer
             {
                 var conn = await completedTask; 
                 if (conn == null) continue;
+
+                Console.WriteLine($"[Client] Connection established with {conn.RemoteEndPoint}");
 
                 if (Interlocked.CompareExchange(ref winningConnection, conn, null) == null)
                 {

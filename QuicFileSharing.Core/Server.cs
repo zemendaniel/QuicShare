@@ -28,6 +28,7 @@ public class Server: QuicPeer
                 foreach (var port in clientPorts)
                 {
                     var target = new IPEndPoint(ip, port);
+                    Console.WriteLine($"[Server] Hole punching to {target}");
                     for (int i = 0; i < 3; i++) // 3 packets for redundancy
                     {
                         try { await udpClient.SendAsync(dummyPacket, dummyPacket.Length, target); }
@@ -55,13 +56,17 @@ public class Server: QuicPeer
                 {
                     if (certificate is X509Certificate2 clientCert)
                     {
-                        return clientCert.Thumbprint.Equals(expectedThumbprint, StringComparison.OrdinalIgnoreCase); 
+                        bool isValid = clientCert.Thumbprint.Equals(expectedThumbprint, StringComparison.OrdinalIgnoreCase);
+                        Console.WriteLine($"[Server] Verifying client cert thumbprint: {clientCert.Thumbprint} Expected: {expectedThumbprint} Valid: {isValid}");
+                        return isValid; 
                     }
+                    Console.WriteLine("[Server] Client certificate is null or invalid type.");
                     return false;
                 }
             }
         };
 
+        Console.WriteLine($"[Server] Starting QUIC listener on {listenEndpoint}...");
         listener = await QuicListener.ListenAsync(new QuicListenerOptions
         {
             ListenEndPoint = listenEndpoint,
@@ -81,14 +86,17 @@ public class Server: QuicPeer
     {
         try
         {
+            Console.WriteLine("[Server] Waiting for incoming connection...");
             if (listener == null)
                 throw new InvalidOperationException("Listener not initialized.");
             try
             {
                 connection = await listener.AcceptConnectionAsync(token);
+                Console.WriteLine($"[Server] Accepted connection from {connection.RemoteEndPoint}");
             }
-            catch (AuthenticationException)
+            catch (AuthenticationException ex)
             {
+                Console.WriteLine($"[Server] Authentication failed: {ex.Message}");
                 GotConnectedToPeer.SetResult(false);
                 CallOnDisconnected("Your peer has provided an invalid certificate.");
                 await StopAsync();
@@ -117,6 +125,7 @@ public class Server: QuicPeer
                 try
                 {
                     var stream = await connection.AcceptInboundStreamAsync(token);
+                    Console.WriteLine($"[Server] Inbound stream accepted (Id: {stream.Id})");
                     var header = new byte[1];
                     var bytesRead = await stream.ReadAsync(header.AsMemory(), token);
                     if (bytesRead == 0)
@@ -128,17 +137,18 @@ public class Server: QuicPeer
                         case 0x01:
                             controlStream = stream;  
                             _ = Task.Run(ControlLoopAsync, token);
-                            // Console.WriteLine("Opened control stream");
+                            Console.WriteLine("[Server] Control stream established.");
                             SetControlStream();
                             break;
 
                         case 0x02:
                             fileStream = stream;     
-                            // Console.WriteLine("Opened file stream");
+                            Console.WriteLine("[Server] File stream established.");
                             SetFileStream();
                             break;
 
                         default:
+                            Console.WriteLine($"[Server] Unknown stream type: {header[0]}");
                             await stream.DisposeAsync();
                             break;
                     }
@@ -160,7 +170,7 @@ public class Server: QuicPeer
         }
         catch (Exception ex)
         {
-            // Console.WriteLine($"Connection error: {ex}");
+            Console.WriteLine($"[Server] Connection error: {ex}");
         }
     }
 
