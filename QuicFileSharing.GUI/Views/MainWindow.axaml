@@ -133,16 +133,21 @@
                 <Grid Margin="20" ZIndex="1" VerticalAlignment="Center" HorizontalAlignment="Center">
 
                     <!-- Lobby -->
-                    <StackPanel
+                    <ScrollViewer
                         IsVisible="{Binding State, Converter={StaticResource EnumToBoolConverter}, ConverterParameter={x:Static models:AppState.Lobby}}"
-                        Spacing="20"
-                        Width="400"
+                        VerticalScrollBarVisibility="Auto"
+                        Width="820"
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center">
-
+                        <StackPanel
+                            Spacing="20"
+                            Width="800"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center">
                         <Border CornerRadius="12"
                                 Background="{DynamicResource PrimaryBrush}"
                                 Padding="10"
+                                Width="400"
                                 Effect="{DynamicResource DropShadow}">
                             <TextBlock Foreground="{DynamicResource TextBrush}"
                                        FontWeight="SemiBold"
@@ -214,7 +219,7 @@
                                    TextWrapping="Wrap"
                                    TextAlignment="Center"
                                    Effect="{DynamicResource TextShadow}"
-                                   MaxWidth="400"
+                                   MaxWidth="900"
                                    Margin="0,10,0,10"/>
 
                         <!-- Settings -->
@@ -234,7 +239,8 @@
                                     BorderBrush="{DynamicResource AccentBrush}"
                                     Effect="{DynamicResource TextShadow}"/>
                         </StackPanel>
-                    </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
 
                     <!-- WaitingForConnection -->
                     <StackPanel
@@ -434,7 +440,7 @@
         Also make sure that you and your peer are using the same signaling server.
     </TextBlock>
 
-    <TextBlock Text="{Binding SettingsText}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" MaxWidth="880"/>
+    <TextBlock Text="{Binding SettingsText}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" MaxWidth="880" HorizontalAlignment="Center"/>
 
     <!-- Action Buttons -->
     <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">

@@ -37,7 +37,7 @@ public class SignalingUtils : IDisposable
     private readonly bool _useFixedPort;
     private readonly string _stunServer;
 
-    private const int MinPortAmount = 5;
+    private const int MinPortAmount = 25;
     
     public SignalingUtils(string stunServer, int configuredPort = 0, bool useFixedPort = false)
     {

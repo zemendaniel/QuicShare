@@ -179,13 +179,16 @@ public partial class MainWindowViewModel : ViewModelBase
                 LobbyText = "Could not connect to peer: " + ex.Message;
                 return;
             }
-            
+
             try
             {
                 var isCertValid = await client.GotConnectedToPeer.Task.WaitAsync(cts.Token);
                 if (!isCertValid) return;
             }
-            catch (TaskCanceledException) { /* ignored */ }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
 
             ProgressPercentage = 0;
             ProgressText = "";
@@ -275,7 +278,10 @@ private async Task CreateRoom()
         var isCertValid = await server.GotConnectedToPeer.Task.WaitAsync(cts.Token);
         if (!isCertValid) return;
     }
-    catch (TaskCanceledException) { /* ignored */ }
+    catch (OperationCanceledException)
+    {
+        return;
+    }
     
     ProgressPercentage = 0;
     ProgressText = "";

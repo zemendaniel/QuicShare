@@ -45,7 +45,11 @@ public class Client : QuicPeer
         if (connection == null)
         {
             GotConnectedToPeer.SetResult(false);
-            CallOnDisconnected("Failed to connect to peer. NAT pinhole may have failed or peer is unreachable.\nCheck your firewall or try configuring IPv4 Port Forwarding.");
+            CallOnDisconnected("Failed to connect to peer due to strict firewalls or NAT routing. Try the following solutions:\n" +
+                               "1. Swap Roles: Have the other person create the room, and you join it.\n" +
+                               "2. Port Forwarding: The room creator can go to Settings, enable 'Use Fixed Port', and set up UDP Port Forwarding on their router.\n" +
+                               "3. IT Admin: Ask your network administrator to allow peer-to-peer traffic.\n" +
+                               "4. Support: If you have a Pro or Enterprise subscription, contact support at quic-share.zemendaniel.hu.");           
             await StopAsync();
             return;
         }
