@@ -67,7 +67,10 @@ jobs:
             # 4. Ensure the main executable has execution permissions
             chmod +x "$APP_DIR/Contents/MacOS/$APP_NAME"
           
-            # 5. Zip the .app bundle (using -ry to preserve symlinks and permissions)
+            # 5. Ad-hoc code sign the .app bundle
+            codesign --force --deep --sign - "$APP_DIR"
+
+            # 6. Zip the .app bundle (using -ry to preserve symlinks and permissions)
             cd "${APP_NAME}_${ARCH}"
             zip -ry "$GITHUB_WORKSPACE/$ZIP_NAME" "${APP_NAME}.app"
             cd "$GITHUB_WORKSPACE"
