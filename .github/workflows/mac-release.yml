@@ -36,6 +36,22 @@ jobs:
             mkdir -p "$APP_DIR/Contents/MacOS"
             mkdir -p "$APP_DIR/Contents/Resources"
           
+            # --- Generate .icns from icon.png ---
+            mkdir icon.iconset
+            sips -z 16 16     ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_16x16.png
+            sips -z 32 32     ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_16x16@2x.png
+            sips -z 32 32     ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_32x32.png
+            sips -z 64 64     ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_32x32@2x.png
+            sips -z 128 128   ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_128x128.png
+            sips -z 256 256   ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_128x128@2x.png
+            sips -z 256 256   ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_256x256.png
+            sips -z 512 512   ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_256x256@2x.png
+            sips -z 512 512   ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_512x512.png
+            sips -z 1024 1024 ./QuicFileSharing.GUI/Assets/icon.png --out icon.iconset/icon_512x512@2x.png
+            iconutil -c icns icon.iconset
+            cp icon.icns "$APP_DIR/Contents/Resources/"
+            rm -rf icon.iconset icon.icns
+
             # 1. Create the Info.plist file required by macOS
             cat <<EOF > "$APP_DIR/Contents/Info.plist"
           <?xml version="1.0" encoding="UTF-8"?>
@@ -48,6 +64,8 @@ jobs:
               <string>io.github.zemendaniel.QuicShare</string>
               <key>CFBundleName</key>
               <string>$APP_NAME</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
               <key>CFBundleVersion</key>
               <string>$VERSION</string>
               <key>CFBundleShortVersionString</key>
