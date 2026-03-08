@@ -1,21 +1,24 @@
 QUICSHARE NON-COMMERCIAL LICENSE (Source-Available)
+
 Copyright (c) 2026 Daniel Zemen. All rights reserved.
 
 This software is provided under a dual-licensing model. By downloading, accessing, compiling, or using this source code and related documentation (the "Software"), you agree to be bound by the terms of this License.
 
 1. PERMITTED USE (NON-COMMERCIAL)
+
 Subject to the terms and conditions of this License, the Copyright Holder grants you a limited, worldwide, royalty-free, non-exclusive license to view, copy, modify, and compile the Software from source code strictly for Non-Commercial purposes only.
 
 "Non-Commercial" is defined exclusively as:
 
-Personal use, hobby projects, or private entertainment.
+Personal use, hobby projects, or private entertainment by an individual.
 
-Academic or educational use by students or teachers.
+2. COMMERCIAL & ORGANIZATIONAL USE STRICTLY PROHIBITED
 
-Use by non-profit charitable organizations.
+You may not use the Software for any commercial, business, governmental, institutional, organizational, or revenue-generating purposes. This includes, but is not limited to:
 
-2. COMMERCIAL USE STRICTLY PROHIBITED
-You may not use the Software for any commercial, business, governmental, or revenue-generating purposes. This includes, but is not limited to:
+Use by any organization, including non-profits, charities, and NGOs.
+
+Use by educational institutions, including schools, colleges, universities, and training centers.
 
 Use by any for-profit company, corporation, or business entity.
 
@@ -23,17 +26,24 @@ Use by freelancers or sole proprietors to facilitate client work.
 
 Integration of the Software into a commercial product or service.
 
-To use the Software in a commercial or corporate environment, you must purchase a commercial Enterprise License at https://quic-share.zemendaniel.hu
+To use the Software in an organizational, commercial, or institutional environment, you must purchase a commercial Enterprise, Educational, or Non-Profit License at https://quic-share.zemendaniel.hu
 
-3. RESTRICTIONS ON REDISTRIBUTION
-To protect the commercial sustainability of the project, the following restrictions apply to distribution:
+3. RESTRICTIONS AND EXCEPTIONS ON REDISTRIBUTION
+
+To protect the commercial sustainability of the project, the following restrictions and exceptions apply to distribution:
 
 Source Code: You may share and redistribute the original or modified source code, provided that this exact License document and copyright notice are included unmodified.
 
-Compiled Binaries: You may NOT publicly distribute, share, host, or upload compiled executables, binaries, or installation packages (e.g., .exe, .zip, .flatpak) of the Software. Compiled binaries are provided exclusively to paying users via the official QuicShare website.
+Compiled Binaries (Public): You may NOT publicly distribute, host, or upload compiled executables, binaries, or installation packages (e.g., .exe, .zip, .flatpak) to public websites, forums, or repositories.
+
+Compiled Binaries (Private/Fair Use): You may privately share the compiled binary directly with an individual (e.g., your "file-sharing partner") solely for the purpose of facilitating a direct, non-commercial file transfer between yourself and that individual.
+
+Compiled Binaries (Paid Licensees): Users who have purchased a valid Enterprise, Educational, or Non-Profit License are exempt from the strict non-commercial binary sharing rules. License holders may distribute the compiled binary internally to members or students within their organization, and externally to clients or partners specifically to facilitate workflows with the licensed organization, subject to the terms of their specific purchasing Agreement.
 
 4. INTELLECTUAL PROPERTY
+
 This License does not grant you ownership of the Software. All rights, title, and interest in and to the Software, including any intellectual property rights, remain the exclusive property of Daniel Zemen.
 
 5. DISCLAIMER OF WARRANTY
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
