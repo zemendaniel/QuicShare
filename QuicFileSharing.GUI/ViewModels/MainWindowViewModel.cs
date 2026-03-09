@@ -22,7 +22,7 @@ using QuicFileSharing.GUI.Views;
 
 namespace QuicFileSharing.GUI.ViewModels;
 
-public partial class MainWindowViewModel : ViewModelBase
+public partial class MainWindowViewModel : ViewModelBase, IDisposable
 {
     [ObservableProperty]
     private AppState state = AppState.Lobby; 
@@ -100,6 +100,10 @@ public partial class MainWindowViewModel : ViewModelBase
             LobbyText = "Please enter a room code.";
             return;
         }
+        
+        peer?.Dispose();
+        cts?.Dispose();
+        
         peer = new Client(); 
         SetPeerHandlers();
         var client = (peer as Client)!;
@@ -201,6 +205,9 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
 private async Task CreateRoom()
 {
+    peer?.Dispose();
+    cts?.Dispose();
+
     peer = new Server();
     SetPeerHandlers();
 
@@ -452,6 +459,8 @@ private async Task CreateRoom()
     [RelayCommand]
     private void BackToLobby() 
     {
+        peer?.Dispose();
+        cts?.Dispose();
         State = AppState.Lobby;
     }
     [RelayCommand]
@@ -531,5 +540,12 @@ private async Task CreateRoom()
             return;
         
         await window.Clipboard.SetTextAsync(RoomCode);
+    }
+
+    public void Dispose()
+    {
+        peer?.Dispose();
+        cts?.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

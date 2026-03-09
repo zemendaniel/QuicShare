@@ -187,4 +187,13 @@ public class Server: QuicPeer
 
         Console.WriteLine("Server stopped.");
     }
+
+    public override void Dispose()
+    {
+        if (listener != null)
+        {
+            _ = listener.DisposeAsync();
+        }
+        base.Dispose();
+    }
 }

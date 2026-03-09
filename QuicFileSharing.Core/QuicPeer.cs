@@ -35,7 +35,7 @@ public class ProgressInfo
     public TimeSpan? TotalTime { get; set; }
 }
 
-public abstract class QuicPeer
+public abstract class QuicPeer : IDisposable
 {
     protected readonly X509Certificate2 cert = CreateSelfSignedCertificate();
     public string Thumbprint => cert.Thumbprint;
@@ -494,7 +494,17 @@ public abstract class QuicPeer
     }
 
     public abstract Task StopAsync();
-    
+
+    public virtual void Dispose()
+    {
+        cert.Dispose();
+        cts?.Dispose();
+        if (controlStream != null) _ = controlStream.DisposeAsync();
+        if (fileStream != null) _ = fileStream.DisposeAsync();
+        if (connection != null) _ = connection.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
+
     protected async Task TimeoutCheckLoopAsync()
     {
         while (!token.IsCancellationRequested)
@@ -570,17 +580,32 @@ public abstract class QuicPeer
 
     private static X509Certificate2 CreateSelfSignedCertificate()
     {
-        using var rsa = new RSACryptoServiceProvider(2048);
-        var request = new CertificateRequest(
-            "",
-            rsa,
-            HashAlgorithmName.SHA256,
-            RSASignaturePadding.Pkcs1
-        );
-        var notBefore = DateTime.UtcNow;
-        var notAfter = notBefore.AddYears(100);
-        var cert = request.CreateSelfSigned(notBefore, notAfter);
+        using var ecdsa = ECDsa.Create();
+        var request = new CertificateRequest("CN=quicshare-peer", ecdsa, HashAlgorithmName.SHA256);
 
-        return new X509Certificate2(cert.Export(X509ContentType.Pfx));
+        // Standard usages for TLS
+        request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
+        request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
+            new OidCollection { 
+                new Oid("1.3.6.1.5.5.7.3.1"), // Server Authentication
+                new Oid("1.3.6.1.5.5.7.3.2")  // Client Authentication
+            }, false));
+
+        var notBefore = DateTime.UtcNow.AddDays(-1); 
+        var notAfter = notBefore.AddYears(10); 
+
+        // Generate the cert
+        using var cert = request.CreateSelfSigned(notBefore, notAfter);
+
+        // Export to PFX bytes
+        // Export to PFX bytes
+        byte[] pfxBytes = cert.Export(X509ContentType.Pfx, "dummy-password");
+
+        // FIX: Use PersistKeySet so Win10/macOS creates a formal key container.
+        // Exportable ensures MsQuic/OpenSSL is allowed to read it for the handshake.
+        return X509CertificateLoader.LoadPkcs12(
+            pfxBytes, 
+            "dummy-password", 
+            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
     }
 }

@@ -151,8 +151,9 @@ public class Client : QuicPeer
             Console.WriteLine($"[Client] Racing candidate: {remoteEndpoint} from local port {localPort}...");
             return await QuicConnection.ConnectAsync(options, cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine($"[Client] Instant failure on port {localPort} to {remoteEndpoint}: {ex.Message}");
             return null; // Connection failed (timeout, refused, cancelled)
         }
     }

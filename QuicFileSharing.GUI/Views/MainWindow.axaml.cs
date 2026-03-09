@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -15,6 +16,12 @@ public partial class MainWindow : Window
         {
             if (DataContext is MainWindowViewModel vm)
                 await vm.CheckQuicSupportAsync(this);
+        };
+
+        Closing += (_, _) =>
+        {
+            if (DataContext is IDisposable disposable)
+                disposable.Dispose();
         };
 
     }
