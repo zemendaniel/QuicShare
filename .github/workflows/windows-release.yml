@@ -27,10 +27,9 @@ jobs:
           } else {
               $ver = git describe --tags --always
           }
-          # Remove leading 'v' if present
           $ver = $ver -replace '^v', ''
           echo "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
-      
+
       - name: Create artifacts folder
         run: mkdir "$env:GITHUB_WORKSPACE\artifacts"
 
@@ -40,7 +39,13 @@ jobs:
       - name: Publish Windows x64
         run: |
           dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-x64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
-          echo "PUBLISH_DIR_X64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish" >> $GITHUB_ENV
+
+      - name: Copy x64 msquic.dll
+        shell: pwsh
+        run: |
+          $src = ".\QuicFileSharing.Core\runtimes\win-x64\native\msquic.dll"
+          $dest = ".\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish\msquic.dll"
+          Copy-Item -Path $src -Destination $dest -Force
 
       - name: Generate vars.iss for x64
         shell: pwsh
@@ -50,8 +55,7 @@ jobs:
           #define PublishDir = "..\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish"
           #define AppVersion = "$ver"
           "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
-      
-      
+
       - name: Build x64 installer
         shell: pwsh
         run: |
@@ -66,7 +70,13 @@ jobs:
       - name: Publish Windows ARM64
         run: |
           dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-arm64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
-          echo "PUBLISH_DIR_ARM64=$env:GITHUB_WORKSPACE\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish" >> $GITHUB_ENV
+
+      - name: Copy ARM64 msquic.dll
+        shell: pwsh
+        run: |
+          $src = ".\QuicFileSharing.Core\runtimes\win-arm64\native\msquic.dll"
+          $dest = ".\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish\msquic.dll"
+          Copy-Item -Path $src -Destination $dest -Force
 
       - name: Generate vars.iss for ARM64
         shell: pwsh
@@ -76,7 +86,7 @@ jobs:
           #define PublishDir = "..\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish"
           #define AppVersion = "$ver"
           "@ | Set-Content "$env:GITHUB_WORKSPACE\installer\vars.iss" -Encoding utf8
-      
+
       - name: Build ARM64 installer
         shell: pwsh
         run: |
@@ -85,6 +95,9 @@ jobs:
             /O"$env:GITHUB_WORKSPACE\artifacts" `
             /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64"
 
+      # -------------------------
+      # Upload Phase
+      # -------------------------
       - name: Upload Binaries to QuicShare Server
         shell: bash
         run: |
@@ -92,9 +105,6 @@ jobs:
           WIN_X64="artifacts/QuicShareInstaller-${VERSION}-win-x64.exe"
           WIN_ARM64="artifacts/QuicShareInstaller-${VERSION}-win-arm64.exe"
 
-          echo "Uploading $WIN_X64 and $WIN_ARM64 to server..."
-
-          # We use the exact same endpoint and secrets as the Linux workflow
           curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
             -F "version=$VERSION" \
