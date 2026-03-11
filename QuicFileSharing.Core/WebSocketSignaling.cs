@@ -87,7 +87,7 @@ public class WebSocketSignaling: IAsyncDisposable
                 var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 HandleMessage(message);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Console.WriteLine($"Receive error: {ex.Message}");
                 await HandleDisconnect(ws.CloseStatus, ws.CloseStatusDescription);
