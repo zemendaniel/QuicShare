@@ -514,8 +514,7 @@ public abstract class QuicPeer : IDisposable
             {
                 await controlStream!.WriteAsync(Array.Empty<byte>(), token);
             }
-            catch (QuicException ex) when (
-                ex.Message.Contains("timed out", StringComparison.OrdinalIgnoreCase)) 
+            catch (QuicException)
             {
                 CallOnDisconnected("You got disconnected from your peer.");
                 await StopAsync();
