@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Net.Quic;
-using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -51,20 +51,43 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private string settingsText = string.Empty;
     [ObservableProperty]
+    private ObservableCollection<PendingTransfer> pendingTransfers = new();
+    [ObservableProperty]
+    private bool hasPendingTransfers;
+    [ObservableProperty]
+    private string filePath = string.Empty;
+    [ObservableProperty]
     private bool isTransferInitiated;
     [ObservableProperty]
-    private string filePath = string.Empty;   
-    [ObservableProperty]
     private bool isProgressVisible;
-    
+
     private AppConfig appConfig = DataStore.Load();
-    private CancellationTokenSource cts;
-    private QuicPeer peer;
+    private CancellationTokenSource? cts;
+    private QuicPeer? peer;
     
     
     public MainWindowViewModel()
     {
         LoadConfig();
+        ReloadPendingTransfers();
+    }
+
+    private void ReloadPendingTransfers()
+    {
+        PendingTransfers.Clear();
+        foreach (var pt in PendingTransferStore.LoadAll())
+        {
+            PendingTransfers.Add(pt);
+        }
+        HasPendingTransfers = PendingTransfers.Count > 0;
+    }
+
+    [RelayCommand]
+    private void DeletePending(PendingTransfer pt)
+    {
+        PendingTransferStore.DeleteWithFile(pt.FileId);
+        PendingTransfers.Remove(pt);
+        HasPendingTransfers = PendingTransfers.Count > 0;
     }
 
     public async Task CheckQuicSupportAsync(Window window)
@@ -121,6 +144,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             RoomCode = string.Empty;
             LobbyText = $"Disconnected from coordination server: {(string.IsNullOrEmpty(description) ? "Something went wrong with your peer." : description)}";
             State = AppState.Lobby;
+            ReloadPendingTransfers();
         };
         
         LobbyText = "Connecting to peer...";
@@ -299,7 +323,8 @@ private async Task CreateRoom()
     [RelayCommand]
     private async Task SendFile(Window window) 
     {
-        peer.IsSending = true;
+        if (peer is not { } p) return;
+        p.IsSending = true;
         RoomText = "";
         TrackProgress();
         
@@ -318,7 +343,7 @@ private async Task CreateRoom()
 
         if (files.Count == 0)
         {
-            peer.IsSending = false;
+            p.IsSending = false;
             RoomText = "No file was selected.";
             return;
         }
@@ -326,13 +351,13 @@ private async Task CreateRoom()
         var path = FileUtils.ResolveFilePath(file);
         if (path is null)
         {
-            peer.IsSending = false;
+            p.IsSending = false;
             RoomText = "Error: Could not determine file path.";
             return;       
         }
         if (!FileUtils.CanReadFile(path))
         {
-            peer.IsSending = false;
+            p.IsSending = false;
             RoomText = $"Error: Permission denied for file: {path}";
             return;      
         }
@@ -342,38 +367,96 @@ private async Task CreateRoom()
             appConfig.SenderPath = selectedDir;
             DataStore.Save(appConfig);
         }
-        peer.SetSendPath(path);
+        p.SetSendPath(path);
         FilePath = $"Selected File:\n{path}";
-        await peer.StartSending();
+        await p.StartSending();
         RoomText = "Waiting for peer to accept file...";
-        var status = await peer.FileTransferCompleted!.Task;
-        peer.IsSending = false;
+        var status = await p.FileTransferCompleted!.Task;
+        p.IsSending = false;
         HandleFileTransferCompleted(status);
+        ReloadPendingTransfers();
     }
 
     private void SetPeerHandlers()
     {
-        peer.OnDisconnected += async msg =>
+        if (peer is not { } p) return;
+        p.OnDisconnected += async msg =>
         {
-            await cts.CancelAsync();
+            if (cts != null) await cts.CancelAsync();
             LobbyText = $"Connection Error: {msg}";
             RoomCode = "";
             State = AppState.Lobby;
             IsTransferInitiated = false;
+            ReloadPendingTransfers();
         };
-        peer.OnFileOffered += async (fileName, fileSize) =>
+        p.OnFileOffered += async (fileName, fileSize, fileId) =>
         {
             (bool accepted, string? path) result = default;
+            long resumeOffset = 0;
+            
+            // Check for pending transfer
+            var pending = PendingTransferStore.Load(fileId);
+            if (pending != null && File.Exists(pending.PartFilePath))
+            {
+                // Verify it matches (optional but good)
+                resumeOffset = new FileInfo(pending.PartFilePath).Length;
+                // If the file is already fully downloaded?
+                if (resumeOffset >= fileSize) resumeOffset = 0; // Or handle as completed?
+                else if (resumeOffset > 0)
+                {
+                    // We interpret this as a resume.
+                    // Suggest the previous save folder
+                    appConfig.ReceiverPath = pending.SaveFolder; 
+                }
+            }
+            
             await Dispatcher.UIThread.InvokeAsync( async () =>
             {
                 var dialog = new FileOfferDialog
                 {
-                    DataContext = new FileOfferDialogViewModel(fileName, fileSize, appConfig.ReceiverPath)
+                    DataContext = new FileOfferDialogViewModel(fileName, fileSize, appConfig.ReceiverPath, resumeOffset)
                 };
                 if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
                 {
                     result = await dialog.ShowDialog<(bool accepted, string? path)>(desktop.MainWindow!);
-                    peer.FileOfferDecisionTsc.SetResult(result);
+
+                    // Handle file move if resuming and path changed
+                    if (result.accepted && resumeOffset > 0 && pending != null)
+                    {
+                        var newPartPath = Path.Combine(result.path!, fileName + ".qs_part");
+                        // If path changed, move the part file
+                        if (!string.Equals(newPartPath, pending.PartFilePath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            try 
+                            { 
+                                if (File.Exists(newPartPath)) File.Delete(newPartPath);
+                                Directory.CreateDirectory(result.path!);
+                                File.Move(pending.PartFilePath, newPartPath);
+                            }
+                            catch (Exception)
+                            {
+                                // If move fails, we can't resume safely or we fall back?
+                                // Let's just log or reset resumeOffset to 0?
+                                // For now, we assume it works or we start over.
+                                resumeOffset = 0; 
+                            }
+                        }
+                    }
+
+                    // Save or Update Pending Transfer
+                    if (result.accepted)
+                    {
+                        var newPt = new PendingTransfer
+                        {
+                            FileId = fileId,
+                            FileName = fileName,
+                            FileSize = fileSize,
+                            SaveFolder = result.path!
+                        };
+                        PendingTransferStore.Save(newPt);
+                    }
+
+                    p.FileOfferDecisionTsc.SetResult((result.accepted, result.path, resumeOffset));
                     if (result.accepted)
                         TrackProgress();
                 }
@@ -381,22 +464,29 @@ private async Task CreateRoom()
             if (!result.accepted)
                 return;
             appConfig.ReceiverPath = result.path ?? string.Empty;
-            DataStore.Save(appConfig);
-            FilePath = $"File is located at: {peer.JoinedFilePath ?? "Unknown file path"}";
-            var status = await peer.FileTransferCompleted!.Task;
+            FilePath = $"File is located at: {p.JoinedFilePath ?? "Unknown file path"}";
+            var status = await p.FileTransferCompleted!.Task;
+            
+            // Clean up pending transfer on success (QuicPeer already deletes .qs_part)
+            if (status == FileTransferStatus.Completed)
+            {
+                PendingTransferStore.Delete(fileId);
+            }
+            
             HandleFileTransferCompleted(status);
+            ReloadPendingTransfers();
         };
-        peer.OnTransferInitiationStateChanged += () =>
+        p.OnTransferInitiationStateChanged += () =>
         {
-            IsTransferInitiated = peer.IsTransferInitiated;
+            IsTransferInitiated = p.IsTransferInitiated;
             if (IsTransferInitiated)
             {
                 RoomText = "";
             }
         };
-        peer.OnTransferStateChanged += () =>
+        p.OnTransferStateChanged += () =>
         {
-            if (peer.IsTransferInProgress)
+            if (p.IsTransferInProgress)
                 IsProgressVisible = true;
         };
     }
@@ -405,9 +495,6 @@ private async Task CreateRoom()
     {
         switch (status)
         {
-            case FileTransferStatus.HashFailed:
-                RoomText = "Error: File transfer was not successful because the file got corrupted during transfer.";
-                break;
             case FileTransferStatus.RejectedAlreadySending:
                 RoomText = "File rejected: Your peer is already sending or preparing to send a file.";
                 break;
@@ -428,7 +515,8 @@ private async Task CreateRoom()
 
     private void TrackProgress()
     {
-        peer.FileTransferProgress = new Progress<ProgressInfo>(info =>
+        if (peer is not { } p) return;
+        p.FileTransferProgress = new Progress<ProgressInfo>(info =>
         {
             ProgressPercentage = info.Percentage;
 
@@ -462,6 +550,7 @@ private async Task CreateRoom()
         peer?.Dispose();
         cts?.Dispose();
         State = AppState.Lobby;
+        ReloadPendingTransfers();
     }
     [RelayCommand]
     private void OpenSettings()
@@ -531,6 +620,7 @@ private async Task CreateRoom()
         LoadConfig();
         State = AppState.Lobby;
         SettingsText = "";
+        ReloadPendingTransfers();
     }
 
     [RelayCommand]

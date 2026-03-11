@@ -23,10 +23,19 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     public Task<(bool accepted, string? path)> ResultTask => tcs.Task;
     private readonly long fileSize;
 
-    public FileOfferDialogViewModel(string fileName, long fileSize, string savePath)
+    public FileOfferDialogViewModel(string fileName, long fileSize, string savePath, long resumeOffset = 0)
     {
         this.fileSize = fileSize;
-        Message = $"{fileName} ({FormatBytes(fileSize)})";
+        var formattedSize = FormatBytes(fileSize);
+        if (resumeOffset > 0)
+        {
+            var percentage = (double)resumeOffset / fileSize * 100;
+            Message = $"Resuming {fileName}\n({FormatBytes(resumeOffset)} of {formattedSize}, {percentage:F1}%)";
+        }
+        else
+        {
+            Message = $"{fileName} ({formattedSize})";
+        }
         SavePath = savePath;
     }
     [RelayCommand]

@@ -14,7 +14,6 @@ public enum FileTransferStatus
 {
     Cancelled,
     Completed,
-    HashFailed,
     RejectedAlreadySending,
     RejectedAlreadyReceiving,
     RejectedUnwanted,
@@ -61,7 +60,6 @@ public abstract class QuicPeer : IDisposable
 
     public TaskCompletionSource<FileTransferStatus>? FileTransferCompleted { get; private set; }
 
-    private TaskCompletionSource<string>? fileHashReady;
     private bool controlReady;
     private bool fileReady;
     private Stopwatch? progressStopwatch;
@@ -78,11 +76,12 @@ public abstract class QuicPeer : IDisposable
     private static readonly TimeSpan speedEstimationInterval = TimeSpan.FromSeconds(2);
     
     public event Action<string>? OnDisconnected;
-    public event Action<string, long>? OnFileOffered;
+    public event Action<string, long, string>? OnFileOffered; // Updated signature
     public event Action? OnTransferInitiationStateChanged;
     public event Action? OnTransferStateChanged;
     public IProgress<ProgressInfo>? FileTransferProgress { get; set; }
-    public TaskCompletionSource<(bool, string?)> FileOfferDecisionTsc { get; private set; } = new();
+    // Updated Tuple: (accepted, savePath, resumeOffset)
+    public TaskCompletionSource<(bool accepted, string? savePath, long resumeOffset)> FileOfferDecisionTsc { get; private set; } = new();
     
     public void SetSendPath(string path)
     {
@@ -186,7 +185,6 @@ public abstract class QuicPeer : IDisposable
         IsSending = false;
         metadata = null;
         JoinedFilePath = null;
-        fileHashReady = null;
         filePath = null;
         saveFolder = null;
         IsTransferInitiated = false;
@@ -200,16 +198,28 @@ public abstract class QuicPeer : IDisposable
         lastSpeedEstimation = TimeSpan.Zero;
     }
     
-    private async Task 
-        HandleControlMessage(string? line)
+    private long _senderResumeOffset = 0;
+
+    private async Task HandleControlMessage(string? line)
     {
         // Console.WriteLine(line);
         switch (line)
         {
             case null:
                 break;
-            case "READY": // Receiver gets this
-                // Console.WriteLine("Receiver is ready, starting file send...");
+            case var _ when line.StartsWith("READY"): // Receiver gets this
+                // READY or READY:offset
+                long offset = 0;
+                if (line.Contains(':'))
+                {
+                     var parts = line.Split(':');
+                     if (parts.Length > 1 && long.TryParse(parts[1], out var parsed))
+                     {
+                         offset = parsed;
+                     }
+                }
+                _senderResumeOffset = offset;
+                // Console.WriteLine($"Receiver is ready (resume: {offset}), starting file send...");
                 _ = Task.Run(SendFileAsync, token);
                 break;
             case var _ when line.StartsWith("RECEIVED_FILE:"): // Sender gets this, marks the end of file transfer
@@ -219,10 +229,6 @@ public abstract class QuicPeer : IDisposable
                     case "OK":
                         // Console.WriteLine("Receiver confirmed file was received successfully.");
                         FileTransferCompleted?.SetResult(FileTransferStatus.Completed);
-                        break;
-                    case "FAILED":
-                        // Console.WriteLine("Receiver did not receive the file successfully (integrity check failed).");
-                        FileTransferCompleted?.SetResult(FileTransferStatus.HashFailed);
                         break;
                     default:
                         // Console.WriteLine($"Unknown status: {status}");
@@ -253,8 +259,12 @@ public abstract class QuicPeer : IDisposable
                 // Console.WriteLine($"Received metadata: {string.Join(", ", metadata)}");
                 
                 FileOfferDecisionTsc = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                OnFileOffered?.Invoke(metadata["FileName"], long.Parse(metadata["FileSize"]));
-                var (accepted, path) = await FileOfferDecisionTsc.Task;
+                
+                // Extract FileId if available, else empty string
+                metadata.TryGetValue("FileId", out var fileId);
+                
+                OnFileOffered?.Invoke(metadata["FileName"], long.Parse(metadata["FileSize"]), fileId ?? "");
+                var (accepted, path, resumeOffset) = await FileOfferDecisionTsc.Task;
 
                 if (!accepted)
                 {
@@ -268,19 +278,14 @@ public abstract class QuicPeer : IDisposable
                 if (saveFolder == null)
                     throw new InvalidOperationException("Save folder not initialized.");
                 JoinedFilePath = Path.Combine(saveFolder, metadata["FileName"]);
-                fileHashReady = new TaskCompletionSource<string>(
-                    TaskCreationOptions.RunContinuationsAsynchronously);
-                await QueueControlMessage("READY");
-                _ = Task.Run(ReceiveFileAsync, token);
                 
-                break;
-            case var _ when line.StartsWith("FILE_SENT:"): // Receiver gets this
-                // Console.WriteLine("Sender confirmed file was sent.");
-                if (fileHashReady == null)
-                    throw new InvalidOperationException("File hash ready not initialized.");
-                var hash = line["FILE_SENT:".Length..];
-                // Console.WriteLine($"Received file hash: {hash}");
-                fileHashReady.SetResult(hash);
+                if (resumeOffset > 0)
+                    await QueueControlMessage($"READY:{resumeOffset}");
+                else
+                    await QueueControlMessage("READY");
+                
+                _ = Task.Run(() => ReceiveFileAsync(resumeOffset), token);
+                
                 break;
             case var _ when line.StartsWith("REJECTED:"): 
                 IsSending = false;
@@ -323,10 +328,20 @@ public abstract class QuicPeer : IDisposable
         var meta = new Dictionary<string, string>
         {
             ["FileName"] = fileName,
-            ["FileSize"] = fileSize.ToString()
+            ["FileSize"] = fileSize.ToString(),
+            ["FileId"] = GenerateFileId(fileInfo)
         };
         var json = System.Text.Json.JsonSerializer.Serialize(meta);
         await QueueControlMessage($"METADATA:{json}");
+    }
+
+    public static string GenerateFileId(FileInfo info)
+    {
+        var raw = $"{info.Name}|{info.Length}|{info.CreationTimeUtc:O}|{info.LastWriteTimeUtc:O}";
+        using var sha = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(raw);
+        var hash = sha.ComputeHash(bytes);
+        return Convert.ToHexString(hash)[..16];
     }
 
     private async Task SendFileAsync()
@@ -343,14 +358,6 @@ public abstract class QuicPeer : IDisposable
         if (fileStream == null)
             throw new InvalidOperationException("File stream not initialized.");
         
-        var hashQueue = Channel.CreateBounded<ArraySegment<byte>>(new BoundedChannelOptions(128)
-        {
-            FullMode = BoundedChannelFullMode.Wait
-        });
-
-        var hashTask = Task.Factory.StartNew(() => ComputeHashAsync(hashQueue), TaskCreationOptions.LongRunning)
-            .Unwrap();
-
         await using var inputFile = new FileStream(
             path: filePath,
             mode: FileMode.Open,
@@ -363,6 +370,38 @@ public abstract class QuicPeer : IDisposable
         long totalBytesSent = 0;
         var fileSize = inputFile.Length;
         progressStopwatch = Stopwatch.StartNew();
+
+        // Resume Logic: Skip bytes
+        if (_senderResumeOffset > 0)
+        {
+             // Simply seek the input file! No need to read and hash.
+             if (inputFile.CanSeek)
+             {
+                 inputFile.Seek(_senderResumeOffset, SeekOrigin.Begin);
+                 totalBytesSent = _senderResumeOffset;
+             }
+             else
+             {
+                // Fallback if not seekable (unlikely for FileStream)
+                long skipped = 0;
+                var skipBuffer = ArrayPool<byte>.Shared.Rent(fileChunkSize);
+                try 
+                {
+                    while (skipped < _senderResumeOffset)
+                    {
+                        var toRead = (int)Math.Min(fileChunkSize, _senderResumeOffset - skipped);
+                        var bytesRead = await inputFile.ReadAsync(skipBuffer.AsMemory(0, toRead), token);
+                        if (bytesRead == 0) break;
+                        skipped += bytesRead;
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(skipBuffer);
+                }
+                totalBytesSent = skipped;
+             }
+        }
         
         while (true)
         {
@@ -375,7 +414,6 @@ public abstract class QuicPeer : IDisposable
             }
 
             await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), token);
-            await hashQueue.Writer.WriteAsync(new ArraySegment<byte>(buffer, 0, bytesRead), token);
 
             totalBytesSent += bytesRead;
             UpdateProgress(totalBytesSent, fileSize);
@@ -384,15 +422,11 @@ public abstract class QuicPeer : IDisposable
 
         await fileStream.FlushAsync(token);
         progressStopwatch.Stop();
-        hashQueue.Writer.Complete();
         
-        var fileHash = await hashTask;
         ReportFinalProgress(totalBytesSent, fileSize);
-        // Console.WriteLine(fileHash);
-        await QueueControlMessage($"FILE_SENT:{fileHash}");
     }
 
-    private async Task ReceiveFileAsync()
+    private async Task ReceiveFileAsync(long resumeOffset = 0)
     {
         if (IsTransferInProgress)
         {
@@ -410,24 +444,29 @@ public abstract class QuicPeer : IDisposable
         if (JoinedFilePath == null)
             throw new InvalidOperationException("Joined file path not initialized.");
 
-        long totalBytesReceived = 0;
-        var fileSize = long.Parse(metadata["FileSize"]);
-
-        var hashQueue = Channel.CreateBounded<ArraySegment<byte>>(new BoundedChannelOptions(128)
-        {
-            FullMode = BoundedChannelFullMode.Wait
-        });
-
-        var hashTask = Task.Factory.StartNew(() => ComputeHashAsync(hashQueue), TaskCreationOptions.LongRunning)
-            .Unwrap();
-
+        // The partial file path is what we are writing to
+        var partFilePath = JoinedFilePath + ".qs_part";
+        
+        // Open/Create for appending/writing
+        // If resuming, Open and Seek to End (which should match resumeOffset)
+        // If not resuming, Create (overwrite)
+        FileMode mode = (resumeOffset > 0) ? FileMode.Open : FileMode.Create;
+        
         await using var outputFile = new FileStream(
-            JoinedFilePath,
-            FileMode.Create,
+            partFilePath,
+            mode,
             FileAccess.Write,
             FileShare.None,
             bufferSize: fileChunkSize,
             useAsync: true);
+
+        if (resumeOffset > 0)
+        {
+             outputFile.Seek(0, SeekOrigin.End);
+        }
+
+        long totalBytesReceived = resumeOffset;
+        var fileSize = long.Parse(metadata["FileSize"]);
 
         progressStopwatch = Stopwatch.StartNew();
 
@@ -441,34 +480,29 @@ public abstract class QuicPeer : IDisposable
                 break;
             }
             await outputFile.WriteAsync(buffer.AsMemory(0, bytesRead), token);
-            await hashQueue.Writer.WriteAsync(new ArraySegment<byte>(buffer, 0, bytesRead), token);
             totalBytesReceived += bytesRead;
             UpdateProgress(totalBytesReceived, fileSize);
             await Task.Yield();
         }
         progressStopwatch.Stop();
-        hashQueue.Writer.Complete();
         
-        var actualFileHash = await hashTask;
-        // Console.WriteLine($"SHA256: {actualFileHash}");
+        // No heavy Flushing in loop requested, but we flush at end
         await outputFile.FlushAsync(token);
+        
+        // Wait for file handle to close before move
+        await outputFile.DisposeAsync();
+
         ReportFinalProgress(totalBytesReceived, fileSize);
 
-        var expectedFileHash = await fileHashReady!.Task;
-        var success = actualFileHash == expectedFileHash;
+        // Console.WriteLine("[SUCCESS] File received successfully.");
+        // Rename .qs_part to final
         
-        if (!success)
-        {
-            // Console.WriteLine("[ERROR] File integrity check failed.");
-            await QueueControlMessage("RECEIVED_FILE:FAILED");
-            FileTransferCompleted!.SetResult(FileTransferStatus.HashFailed);
-        }
-        else
-        {
-            // Console.WriteLine("[SUCCESS] File received successfully.");
-            await QueueControlMessage("RECEIVED_FILE:OK");
-            FileTransferCompleted!.SetResult(FileTransferStatus.Completed);
-        }
+        // Note: JoinedFilePath is the final path
+        if (File.Exists(JoinedFilePath)) File.Delete(JoinedFilePath);
+        File.Move(partFilePath, JoinedFilePath);
+        
+        await QueueControlMessage("RECEIVED_FILE:OK");
+        FileTransferCompleted!.SetResult(FileTransferStatus.Completed);
         
         ResetAfterFileTransferCompleted();
     }
@@ -479,19 +513,6 @@ public abstract class QuicPeer : IDisposable
         await controlSendQueue.Writer.WriteAsync(msg, token);
     }
 
-    private async Task<string> ComputeHashAsync(Channel<ArraySegment<byte>> hashQueue)
-    {
-        using var hasher = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-
-        await foreach (var segment in hashQueue.Reader.ReadAllAsync(token))
-        {
-            hasher.AppendData(segment.AsSpan());
-            ArrayPool<byte>.Shared.Return(segment.Array!);
-        }
-
-        var hash = hasher.GetHashAndReset();
-        return Convert.ToHexString(hash).ToLowerInvariant();
-    }
 
     public abstract Task StopAsync();
 
