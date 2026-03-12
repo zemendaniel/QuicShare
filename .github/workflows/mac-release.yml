@@ -88,7 +88,10 @@ jobs:
             # 4. Ensure the main executable has execution permissions
             chmod +x "$APP_DIR/Contents/MacOS/$APP_NAME"
           
-            # 5. Ad-hoc code sign the .app bundle
+            codesign --force --sign - "$APP_DIR/Contents/MacOS/libcrypto.3.dylib"
+            codesign --force --sign - "$APP_DIR/Contents/MacOS/libssl.3.dylib"
+            codesign --force --sign - "$APP_DIR/Contents/MacOS/libmsquic.dylib"
+            
             codesign --force --deep --sign - "$APP_DIR"
 
             # 6. Zip the .app bundle (using -ry to preserve symlinks and permissions)
