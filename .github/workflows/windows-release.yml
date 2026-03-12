@@ -3,7 +3,7 @@ name: Build Windows Installers & Release
 on:
   push:
     tags:
-      - 'v*'  # Trigger on tags like v1.0, v1.1, etc.
+      - 'v*'
 
 jobs:
   build-and-release:
@@ -40,6 +40,14 @@ jobs:
         run: |
           dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-x64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
 
+      # CRITICAL: Overwrite official Schannel DLL with your OpenSSL DLL
+      - name: Inject Custom x64 msquic.dll
+        shell: pwsh
+        run: |
+          $src = ".\QuicFileSharing.Core\runtimes\win-x64\native\msquic.dll"
+          $dest = ".\QuicFileSharing.GUI\bin\Release\net9.0\win-x64\publish\msquic.dll"
+          Copy-Item -Path $src -Destination $dest -Force
+
       - name: Generate vars.iss for x64
         shell: pwsh
         run: |
@@ -64,6 +72,14 @@ jobs:
         run: |
           dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-arm64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
 
+      # CRITICAL: Overwrite official Schannel DLL with your OpenSSL DLL
+      - name: Inject Custom ARM64 msquic.dll
+        shell: pwsh
+        run: |
+          $src = ".\QuicFileSharing.Core\runtimes\win-arm64\native\msquic.dll"
+          $dest = ".\QuicFileSharing.GUI\bin\Release\net9.0\win-arm64\publish\msquic.dll"
+          Copy-Item -Path $src -Destination $dest -Force
+
       - name: Generate vars.iss for ARM64
         shell: pwsh
         run: |
@@ -82,11 +98,8 @@ jobs:
             /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64"
 
       # -------------------------
-      # GitHub Artifact Upload (Safety First)
+      # GitHub Artifact Upload
       # -------------------------
-      # We upload to GitHub here. If the server upload below fails, 
-      # you can still download the installers from the GitHub UI.
-
       - name: Upload Windows x64 Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -110,9 +123,6 @@ jobs:
           VERSION="${{ github.ref_name }}"
           WIN_X64="artifacts/QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-x64.exe"
           WIN_ARM64="artifacts/QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64.exe"
-
-          echo "Uploading Windows assets to server..."
-
           curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
             -F "version=$VERSION" \
