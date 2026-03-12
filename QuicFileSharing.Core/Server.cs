@@ -54,14 +54,19 @@ public class Server: QuicPeer
                 ClientCertificateRequired = true,
                 RemoteCertificateValidationCallback = (_, certificate, _, _) =>
                 {
-                    if (certificate is X509Certificate2 clientCert)
+                    if (certificate == null)
                     {
-                        bool isValid = clientCert.Thumbprint.Equals(expectedThumbprint, StringComparison.OrdinalIgnoreCase);
-                        Console.WriteLine($"[Server] Verifying client cert thumbprint: {clientCert.Thumbprint} Expected: {expectedThumbprint} Valid: {isValid}");
-                        return isValid; 
+                        Console.WriteLine("[Peer] Certificate is null.");
+                        return false;
                     }
-                    Console.WriteLine("[Server] Client certificate is null or invalid type.");
-                    return false;
+
+                    // Use GetCertHashString() which exists on the base class! No casting required.
+                    string actualThumbprint = certificate.GetCertHashString();
+    
+                    bool isValid = string.Equals(actualThumbprint, expectedThumbprint, StringComparison.OrdinalIgnoreCase);
+                    Console.WriteLine($"[Peer] Verifying cert thumbprint: {actualThumbprint} Expected: {expectedThumbprint} Match: {isValid}");
+    
+                    return isValid;
                 }
             }
         };
