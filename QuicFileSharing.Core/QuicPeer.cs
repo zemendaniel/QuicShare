@@ -110,7 +110,17 @@ public abstract class QuicPeer : IDisposable
         }
     }
     
-    protected void CallOnDisconnected(string reason) => OnDisconnected?.Invoke(reason);
+    protected void CallOnDisconnected(string reason)
+    {
+        CancelPendingTasks();
+        OnDisconnected?.Invoke(reason);
+    } 
+
+    private void CancelPendingTasks()
+    {
+        FileTransferCompleted?.TrySetResult(FileTransferStatus.Cancelled);
+        FileOfferDecisionTsc?.TrySetResult((false, null, 0));
+    }
 
     protected async Task ControlLoopAsync()
     {
@@ -518,6 +528,7 @@ public abstract class QuicPeer : IDisposable
 
     public virtual void Dispose()
     {
+        CancelPendingTasks();
         cert.Dispose();
         cts?.Dispose();
         if (controlStream != null) _ = controlStream.DisposeAsync();

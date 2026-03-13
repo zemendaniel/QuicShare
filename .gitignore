@@ -486,3 +486,6 @@ $RECYCLE.BIN/
 installer/QuicShareSetup.exe
 
 repomix-output.xml
+
+package.json
+package-lock.json
