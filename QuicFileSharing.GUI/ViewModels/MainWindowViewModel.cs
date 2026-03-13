@@ -126,8 +126,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
         
         peer?.Dispose();
         cts?.Dispose();
+
+        FilePath = string.Empty;
+        RoomText = string.Empty;
+        IsProgressVisible = false;
+        IsTransferInitiated = false;
+        ProgressPercentage = 0;
+        ProgressText = string.Empty;
         
-        peer = new Client(); 
+        peer = new Client();
         SetPeerHandlers();
         var client = (peer as Client)!;
         
@@ -231,6 +238,13 @@ private async Task CreateRoom()
 {
     peer?.Dispose();
     cts?.Dispose();
+
+    FilePath = string.Empty;
+    RoomText = string.Empty;
+    IsProgressVisible = false;
+    IsTransferInitiated = false;
+    ProgressPercentage = 0;
+    ProgressText = string.Empty;
 
     peer = new Server();
     SetPeerHandlers();
@@ -369,8 +383,8 @@ private async Task CreateRoom()
         }
         p.SetSendPath(path);
         FilePath = $"Selected File:\n{path}";
-        await p.StartSending();
         RoomText = "Waiting for peer to accept file...";
+        await p.StartSending();
         var status = await p.FileTransferCompleted!.Task;
         p.IsSending = false;
         HandleFileTransferCompleted(status);
@@ -480,15 +494,14 @@ private async Task CreateRoom()
         p.OnTransferInitiationStateChanged += () =>
         {
             IsTransferInitiated = p.IsTransferInitiated;
-            if (IsTransferInitiated)
-            {
-                RoomText = "";
-            }
         };
         p.OnTransferStateChanged += () =>
         {
             if (p.IsTransferInProgress)
+            {
                 IsProgressVisible = true;
+                RoomText = "";
+            }
         };
     }
 
