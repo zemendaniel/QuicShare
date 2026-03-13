@@ -17,6 +17,8 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     private string savePath = string.Empty;
     [ObservableProperty]
     private string errorText = string.Empty;
+    [ObservableProperty]
+    private bool canChangePath = true;
 
     private readonly TaskCompletionSource<(bool accepted, string? path)> tcs = new();
 
@@ -37,6 +39,7 @@ public partial class FileOfferDialogViewModel : ViewModelBase
             Message = $"{fileName} ({formattedSize})";
         }
         SavePath = savePath;
+        CanChangePath = resumeOffset == 0;
     }
     [RelayCommand]
     private async Task SelectFolder(Window window)

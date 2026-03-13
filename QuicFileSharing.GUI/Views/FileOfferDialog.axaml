@@ -157,6 +157,7 @@
                         <Button Content="Browse..."
                                 Command="{Binding SelectFolderCommand}"
                                 CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}"
+                                IsEnabled="{Binding CanChangePath}"
                                 Padding="10,6"
                                 CornerRadius="12"
                                 HorizontalAlignment="Center"

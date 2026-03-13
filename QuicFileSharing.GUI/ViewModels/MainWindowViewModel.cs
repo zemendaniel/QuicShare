@@ -396,17 +396,17 @@ private async Task CreateRoom()
             
             // Check for pending transfer
             var pending = PendingTransferStore.Load(fileId);
-            if (pending != null && File.Exists(pending.PartFilePath))
+            if (pending != null)
             {
-                // Verify it matches (optional but good)
-                resumeOffset = new FileInfo(pending.PartFilePath).Length;
-                // If the file is already fully downloaded?
-                if (resumeOffset >= fileSize) resumeOffset = 0; // Or handle as completed?
-                else if (resumeOffset > 0)
+                // Suggest the previous save folder even if part file is missing
+                appConfig.ReceiverPath = pending.SaveFolder;
+
+                if (File.Exists(pending.PartFilePath))
                 {
-                    // We interpret this as a resume.
-                    // Suggest the previous save folder
-                    appConfig.ReceiverPath = pending.SaveFolder; 
+                    // Verify it matches (optional but good)
+                    resumeOffset = new FileInfo(pending.PartFilePath).Length;
+                    // If the file is already fully downloaded?
+                    if (resumeOffset >= fileSize) resumeOffset = 0; // Or handle as completed?
                 }
             }
             
@@ -464,6 +464,7 @@ private async Task CreateRoom()
             if (!result.accepted)
                 return;
             appConfig.ReceiverPath = result.path ?? string.Empty;
+            DataStore.Save(appConfig);
             FilePath = $"File is located at: {p.JoinedFilePath ?? "Unknown file path"}";
             var status = await p.FileTransferCompleted!.Task;
             
