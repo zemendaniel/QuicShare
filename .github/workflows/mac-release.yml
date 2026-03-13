@@ -79,13 +79,25 @@ jobs:
             # 2. Copy the published .NET binaries
             cp -R "$PUBLISH_DIR/"* "$APP_DIR/Contents/MacOS/"
           
-            # 3. Manually copy the native libmsquic.dylib file
-            cp "./QuicFileSharing.Core/runtimes/libmsquic.dylib" "$APP_DIR/Contents/MacOS/"
+            # 3. Manually copy the native libmsquic AND OpenSSL files
+            # Updated paths to match the osx/native/ directory structure
+            cp "./QuicFileSharing.Core/runtimes/osx/native/libmsquic.dylib" "$APP_DIR/Contents/MacOS/"
+            cp "./QuicFileSharing.Core/runtimes/osx/native/libssl.3.dylib" "$APP_DIR/Contents/MacOS/"
+            cp "./QuicFileSharing.Core/runtimes/osx/native/libcrypto.3.dylib" "$APP_DIR/Contents/MacOS/"
+          
+            install_name_tool -change "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib" "@executable_path/libcrypto.3.dylib" "$APP_DIR/Contents/MacOS/libmsquic.dylib"
+            install_name_tool -change "/opt/homebrew/opt/openssl@3/lib/libssl.3.dylib" "@executable_path/libssl.3.dylib" "$APP_DIR/Contents/MacOS/libmsquic.dylib"
+    
+            # Also patch libssl to find libcrypto next to it
+            install_name_tool -change "/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib" "@executable_path/libcrypto.3.dylib" "$APP_DIR/Contents/MacOS/libssl.3.dylib"
           
             # 4. Ensure the main executable has execution permissions
             chmod +x "$APP_DIR/Contents/MacOS/$APP_NAME"
           
-            # 5. Ad-hoc code sign the .app bundle
+            codesign --force --sign - "$APP_DIR/Contents/MacOS/libcrypto.3.dylib"
+            codesign --force --sign - "$APP_DIR/Contents/MacOS/libssl.3.dylib"
+            codesign --force --sign - "$APP_DIR/Contents/MacOS/libmsquic.dylib"
+            
             codesign --force --deep --sign - "$APP_DIR"
 
             # 6. Zip the .app bundle (using -ry to preserve symlinks and permissions)

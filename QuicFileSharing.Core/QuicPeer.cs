@@ -600,10 +600,22 @@ public abstract class QuicPeer : IDisposable
 
     private static X509Certificate2 CreateSelfSignedCertificate()
     {
-        using var ecdsa = ECDsa.Create();
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string certFolder = Path.Combine(appData, "QuicShare");
+        string certPath = Path.Combine(certFolder, "session.pfx");
+        const string pass = "password";
+        
+        // Ensure the folder exists
+        if (!Directory.Exists(certFolder))
+        {
+            Directory.CreateDirectory(certFolder);
+        }
+
+        // 2. Generate a fresh certificate in memory using ECDsa (Modern/Fast)
+        using var ecdsa = ECDsa.Create(); 
         var request = new CertificateRequest("CN=quicshare-peer", ecdsa, HashAlgorithmName.SHA256);
 
-        // Standard usages for TLS
+        // Required TLS extensions for Quic/OpenSSL
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
         request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
             new OidCollection { 
@@ -611,21 +623,15 @@ public abstract class QuicPeer : IDisposable
                 new Oid("1.3.6.1.5.5.7.3.2")  // Client Authentication
             }, false));
 
-        var notBefore = DateTime.UtcNow.AddDays(-1); 
-        var notAfter = notBefore.AddYears(10); 
+        // Create the cert (valid from yesterday to 1 year from now)
+        using var ephemeralCert = request.CreateSelfSigned(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddYears(1));
 
-        // Generate the cert
-        using var cert = request.CreateSelfSigned(notBefore, notAfter);
+        // 3. Overwrite the file in AppData immediately
+        // This ensures a unique identity per run but keeps the storage path stable
+        File.WriteAllBytes(certPath, ephemeralCert.Export(X509ContentType.Pfx, pass));
 
-        // Export to PFX bytes
-        // Export to PFX bytes
-        byte[] pfxBytes = cert.Export(X509ContentType.Pfx, "dummy-password");
-
-        // FIX: Use PersistKeySet so Win10/macOS creates a formal key container.
-        // Exportable ensures MsQuic/OpenSSL is allowed to read it for the handshake.
-        return X509CertificateLoader.LoadPkcs12(
-            pfxBytes, 
-            "dummy-password", 
-            X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
+        // 4. Load it back with the Exportable flag
+        // This is the 'Secret Sauce' that allows the OpenSSL msquic.dll to read the private key bits
+        return new X509Certificate2(certPath, pass, X509KeyStorageFlags.Exportable);
     }
 }

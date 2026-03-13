@@ -15,25 +15,25 @@
 <!--		<None Include="runtimes/libmsquic.dylib" CopyToOutputDirectory="Always" CopyToPublishDirectory="Never" />-->
 <!--	</ItemGroup>-->
 
-    <ItemGroup>
-        <None Include="runtimes\linux-x64\native\libmsquic.so">
-            <Link>libmsquic.so</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </None>
+<!--    <ItemGroup>-->
+<!--        <None Include="runtimes\linux-x64\native\libmsquic.so">-->
+<!--            <Link>libmsquic.so</Link>-->
+<!--            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+<!--            <CopyToPublishDirectory>Never</CopyToPublishDirectory>-->
+<!--        </None>-->
 
-        <None Include="runtimes\libmsquic.dylib">
-            <Link>libmsquic.dylib</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </None>
+<!--        <None Include="runtimes\libmsquic.dylib">-->
+<!--            <Link>libmsquic.dylib</Link>-->
+<!--            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+<!--            <CopyToPublishDirectory>Never</CopyToPublishDirectory>-->
+<!--        </None>-->
 
-        <None Include="runtimes\win-x64\native\msquic.dll">
-            <Link>msquic.dll</Link>
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>Never</CopyToPublishDirectory>
-        </None>
-    </ItemGroup>
+<!--        <None Include="runtimes\win-x64\native\msquic.dll">-->
+<!--            <Link>msquic.dll</Link>-->
+<!--            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>-->
+<!--            <CopyToPublishDirectory>Never</CopyToPublishDirectory>-->
+<!--        </None>-->
+<!--    </ItemGroup>-->
     
 	<ItemGroup>
 	  <PackageReference Include="Stun.Net" Version="9.0.1" />

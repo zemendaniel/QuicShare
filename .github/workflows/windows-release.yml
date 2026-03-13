@@ -3,7 +3,7 @@ name: Build Windows Installers & Release
 on:
   push:
     tags:
-      - 'v*'  # Trigger on tags like v1.0, v1.1, etc.
+      - 'v*'
 
 jobs:
   build-and-release:
@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
 
@@ -28,19 +28,20 @@ jobs:
               $ver = git describe --tags --always
           }
           $ver = $ver -replace '^v', ''
-          echo "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8
+          echo "version=$ver" >> $env:GITHUB_OUTPUT
 
       - name: Create artifacts folder
         run: mkdir "$env:GITHUB_WORKSPACE\artifacts"
 
       # -------------------------
-      # Windows x64
+      # Windows x64 Build
       # -------------------------
       - name: Publish Windows x64
         run: |
           dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-x64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
 
-      - name: Copy x64 msquic.dll
+      # CRITICAL: Overwrite official Schannel DLL with your OpenSSL DLL
+      - name: Inject Custom x64 msquic.dll
         shell: pwsh
         run: |
           $src = ".\QuicFileSharing.Core\runtimes\win-x64\native\msquic.dll"
@@ -65,13 +66,14 @@ jobs:
             /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-x64"
 
       # -------------------------
-      # Windows ARM64
+      # Windows ARM64 Build
       # -------------------------
       - name: Publish Windows ARM64
         run: |
           dotnet publish .\QuicFileSharing.GUI\QuicFileSharing.GUI.csproj -c Release -r win-arm64 --self-contained true /p:UseAppHost=true /p:Version=${{ steps.set_version.outputs.version }}
 
-      - name: Copy ARM64 msquic.dll
+      # CRITICAL: Overwrite official Schannel DLL with your OpenSSL DLL
+      - name: Inject Custom ARM64 msquic.dll
         shell: pwsh
         run: |
           $src = ".\QuicFileSharing.Core\runtimes\win-arm64\native\msquic.dll"
@@ -96,15 +98,31 @@ jobs:
             /F"QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64"
 
       # -------------------------
-      # Upload Phase
+      # GitHub Artifact Upload
+      # -------------------------
+      - name: Upload Windows x64 Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-x64
+          path: artifacts/QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-x64.exe
+
+      - name: Upload Windows ARM64 Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: win-arm64
+          path: artifacts/QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64.exe
+
+      # -------------------------
+      # Private Server Upload
       # -------------------------
       - name: Upload Binaries to QuicShare Server
         shell: bash
         run: |
           VERSION="${{ github.ref_name }}"
-          WIN_X64="artifacts/QuicShareInstaller-${VERSION}-win-x64.exe"
-          WIN_ARM64="artifacts/QuicShareInstaller-${VERSION}-win-arm64.exe"
-
+          WIN_X64="artifacts/QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-x64.exe"
+          WIN_ARM64="artifacts/QuicShareInstaller-v${{ steps.set_version.outputs.version }}-win-arm64.exe"
           curl -X POST "${{ secrets.SERVER_URL }}/api/admin/upload-release" \
             -H "Authorization: Bearer ${{ secrets.ADMIN_API_KEY }}" \
             -F "version=$VERSION" \

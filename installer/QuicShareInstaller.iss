@@ -53,7 +53,13 @@ Name: "{group}\QuicShare"; Filename: "{app}\QuicShare.exe"; IconFilename: "{app}
 Name: "{userdesktop}\QuicShare"; Filename: "{app}\QuicShare.exe"; IconFilename: "{app}\QuicShare.exe"; Tasks: desktopicon
 
 [Run]
+Filename: "{cmd}"; Parameters: "/c netsh advfirewall firewall delete rule name=""QuicShare"""; Flags: runhidden
+Filename: "{cmd}"; Parameters: "/c netsh advfirewall firewall add rule name=""QuicShare"" dir=in action=allow program=""{app}\QuicShare.exe"" protocol=UDP profile=any edge=yes enable=yes"; Flags: runhidden
 Filename: "{app}\QuicShare.exe"; Description: "Launch QuicShare"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+; Silently remove the Firewall Rule when the user uninstalls
+Filename: "{cmd}"; Parameters: "/c netsh advfirewall firewall delete rule name=""QuicShare"""; Flags: runhidden
 
 [UninstallDelete]
 ; Delete Start Menu folder
