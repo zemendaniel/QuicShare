@@ -248,6 +248,7 @@ public abstract class QuicPeer : IDisposable
                 break;
             
             case var _ when line.StartsWith("METADATA:"):   // Receiver gets this, marks the start of file transfer
+                Console.WriteLine("METADATA RECEIVED");
                 if (IsTransferInitiated)
                 {
                     await QueueControlMessage("REJECTED:ALREADY_RECEIVING");

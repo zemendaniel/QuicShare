@@ -74,11 +74,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void ReloadPendingTransfers()
     {
-        PendingTransfers.Clear();
-        foreach (var pt in PendingTransferStore.LoadAll())
-        {
-            PendingTransfers.Add(pt);
-        }
+        PendingTransfers = new ObservableCollection<PendingTransfer>(PendingTransferStore.LoadAll());
         HasPendingTransfers = PendingTransfers.Count > 0;
     }
 
