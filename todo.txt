@@ -1,0 +1,7 @@
+lite version, build scripts, update website
+loggins
+update license and on website
+agree to eula 
+update readme
+
+active pausing, resuming
