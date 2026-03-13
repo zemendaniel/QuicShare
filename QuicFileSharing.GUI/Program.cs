@@ -31,6 +31,11 @@ sealed class Program
             NativeLibrary.TryLoad(Path.Combine(appDir, "msquic.dll"), out _);
         }
 
+        if (OperatingSystem.IsLinux())
+        {
+            NativeLibrary.TryLoad(Path.Combine(appDir, "libmsquic.so"), out _);
+        }
+
         BuildAvaloniaApp()
             .StartWithClassicDesktopLifetime(args);
     }
