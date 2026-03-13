@@ -90,4 +90,13 @@ public partial class FileOfferDialogViewModel : ViewModelBase
     {
         tcs.SetResult((false, null));
     }
+    
+    /// <summary>
+    /// Safely rejects the file offer if no decision has been made yet.
+    /// Called when the dialog is closed without clicking Accept or Reject.
+    /// </summary>
+    public void TryReject()
+    {
+        tcs.TrySetResult((false, null));
+    }
 }

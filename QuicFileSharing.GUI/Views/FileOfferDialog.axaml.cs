@@ -18,7 +18,13 @@ public partial class FileOfferDialog : Window
                 _ = HandleResultAsync(vm);
         };
         LayoutUpdated += (s, e) => UpdateMinSize();
-
+        
+        // Handle window closing to ensure TaskCompletionSource is completed
+        Closing += (_, _) =>
+        {
+            if (DataContext is FileOfferDialogViewModel vm)
+                vm.TryReject();
+        };
     }
 
     private async Task HandleResultAsync(FileOfferDialogViewModel vm)

@@ -74,6 +74,13 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
 
     private void ReloadPendingTransfers()
     {
+        // Ensure we're on the UI thread when modifying ObservableCollection
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(ReloadPendingTransfers);
+            return;
+        }
+        
         PendingTransfers = new ObservableCollection<PendingTransfer>(PendingTransferStore.LoadAll());
         HasPendingTransfers = PendingTransfers.Count > 0;
     }
@@ -172,7 +179,9 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             catch (InvalidOperationException ex)
             {
                 await cts.CancelAsync();
+                State = AppState.Lobby;
                 LobbyText = $"Could not connect to coordination server: {ex.Message}";
+                return;
             }
 
             // 3. Wait for Answer (RACE_START signal)
@@ -184,6 +193,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             catch (Exception ex)
             {
                 await cts.CancelAsync();
+                State = AppState.Lobby;
                 LobbyText = $"Could not connect to peer: {ex.Message}";
                 return;           
             }
@@ -191,6 +201,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             if (signalingUtils.PeerCandidates.Count == 0)
             {
                 await cts.CancelAsync();
+                State = AppState.Lobby;
                 LobbyText = "Could not connect to peer: No valid endpoints discovered.";
                 return;
             }
@@ -207,6 +218,7 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             catch (Exception ex)
             {
                 await cts.CancelAsync();
+                State = AppState.Lobby;
                 LobbyText = "Could not connect to peer: " + ex.Message;
                 return;
             }
@@ -214,10 +226,15 @@ public partial class MainWindowViewModel : ViewModelBase, IDisposable
             try
             {
                 var isCertValid = await client.GotConnectedToPeer.Task.WaitAsync(cts.Token);
-                if (!isCertValid) return;
+                if (!isCertValid)
+                {
+                    State = AppState.Lobby;
+                    return;
+                }
             }
             catch (OperationCanceledException)
             {
+                State = AppState.Lobby;
                 return;
             }
 
@@ -312,15 +329,21 @@ private async Task CreateRoom()
     {
         State = AppState.Lobby;
         LobbyText = $"Could not connect to coordination server: {ex.Message}";
+        return;
     }
 
     try
     {
         var isCertValid = await server.GotConnectedToPeer.Task.WaitAsync(cts.Token);
-        if (!isCertValid) return;
+        if (!isCertValid)
+        {
+            State = AppState.Lobby;
+            return;
+        }
     }
     catch (OperationCanceledException)
     {
+        State = AppState.Lobby;
         return;
     }
     
@@ -395,8 +418,16 @@ private async Task CreateRoom()
             if (cts != null) await cts.CancelAsync();
             LobbyText = $"Connection Error: {msg}";
             RoomCode = "";
-            State = AppState.Lobby;
+            
+            // Reset all UI state
+            IsProgressVisible = false;
             IsTransferInitiated = false;
+            FilePath = "";
+            RoomText = "";
+            ProgressPercentage = 0;
+            ProgressText = "";
+            
+            State = AppState.Lobby;
             ReloadPendingTransfers();
         };
         p.OnFileOffered += async (fileName, fileSize, fileId) =>
@@ -466,7 +497,7 @@ private async Task CreateRoom()
                         PendingTransferStore.Save(newPt);
                     }
 
-                    p.FileOfferDecisionTsc.SetResult((result.accepted, result.path, resumeOffset));
+                    p.FileOfferDecisionTsc.TrySetResult((result.accepted, result.path, resumeOffset));
                     if (result.accepted)
                         TrackProgress();
                 }
@@ -503,6 +534,10 @@ private async Task CreateRoom()
 
     private void HandleFileTransferCompleted(FileTransferStatus status)
     {
+        // Reset transfer state
+        IsProgressVisible = false;
+        IsTransferInitiated = false;
+        
         switch (status)
         {
             case FileTransferStatus.RejectedAlreadySending:
@@ -559,6 +594,15 @@ private async Task CreateRoom()
     {
         peer?.Dispose();
         cts?.Dispose();
+        
+        // Reset all UI state
+        IsProgressVisible = false;
+        IsTransferInitiated = false;
+        FilePath = "";
+        RoomText = "";
+        ProgressPercentage = 0;
+        ProgressText = "";
+        
         State = AppState.Lobby;
         ReloadPendingTransfers();
     }

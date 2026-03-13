@@ -49,7 +49,7 @@ public class Client : QuicPeer
 
         if (connection == null)
         {
-            GotConnectedToPeer.SetResult(false);
+            GotConnectedToPeer.TrySetResult(false);
             CallOnDisconnected("Failed to connect to peer due to strict firewalls or NAT routing. Try the following solutions:\n" +
                                "1. Swap Roles: Have the other person create the room, and you join it.\n" +
                                "2. Port Forwarding: The room creator can go to Settings, enable 'Use Fixed Port', and set up UDP Port Forwarding on their router.\n" +
@@ -73,7 +73,7 @@ public class Client : QuicPeer
         await fileStream.WriteAsync(new byte[] { 0x02 }, token); 
         SetFileStream();
 
-        GotConnectedToPeer.SetResult(true);
+        GotConnectedToPeer.TrySetResult(true);
         _ = Task.Run(TimeoutCheckLoopAsync, token);
     }
     private async Task<QuicConnection?> RaceConnectionsAsync(List<IPEndPoint> candidates, List<int> reservedPorts, SslClientAuthenticationOptions authOptions)

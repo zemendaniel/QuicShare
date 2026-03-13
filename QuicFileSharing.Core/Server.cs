@@ -102,13 +102,13 @@ public class Server: QuicPeer
             catch (AuthenticationException ex)
             {
                 Console.WriteLine($"[Server] Authentication failed: {ex.Message}");
-                GotConnectedToPeer.SetResult(false);
+                GotConnectedToPeer.TrySetResult(false);
                 CallOnDisconnected("Your peer has provided an invalid certificate.");
                 await StopAsync();
                 return;
             }
 
-            GotConnectedToPeer.SetResult(true);
+            GotConnectedToPeer.TrySetResult(true);
             Console.WriteLine($"Accepted connection from {connection.RemoteEndPoint}");
             _ = Task.Run(HandleStreamsAsync, token);
             _ = Task.Run(TimeoutCheckLoopAsync, token);
