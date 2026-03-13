@@ -577,102 +577,40 @@ public abstract class QuicPeer : IDisposable
     }
     
 
-    // private static X509Certificate2 CreateSelfSignedCertificate()
-    // {
-    //     using var ecdsa = ECDsa.Create();
-    //     var request = new CertificateRequest("CN=quicshare-peer", ecdsa, HashAlgorithmName.SHA256);
-    //
-    //     // Standard usages for TLS
-    //     request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
-    //     request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
-    //         new OidCollection { 
-    //             new Oid("1.3.6.1.5.5.7.3.1"), // Server Authentication
-    //             new Oid("1.3.6.1.5.5.7.3.2")  // Client Authentication
-    //         }, false));
-    //
-    //     var notBefore = DateTime.UtcNow.AddDays(-1); 
-    //     var notAfter = notBefore.AddYears(10); 
-    //
-    //     // Generate the cert
-    //     using var cert = request.CreateSelfSigned(notBefore, notAfter);
-    //
-    //     // Export to PFX bytes
-    //     // Export to PFX bytes
-    //     byte[] pfxBytes = cert.Export(X509ContentType.Pfx, "dummy-password");
-    //
-    //     // FIX: Use PersistKeySet so Win10/macOS creates a formal key container.
-    //     // Exportable ensures MsQuic/OpenSSL is allowed to read it for the handshake.
-    //     return X509CertificateLoader.LoadPkcs12(
-    //         pfxBytes, 
-    //         "dummy-password", 
-    //         X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
-    // }
-    // private static X509Certificate2 CreateSelfSignedCertificate()
-    // {
-    //     // 1. Switch from ECDsa to RSA (Universal compatibility across all OS crypto stacks)
-    //     using var rsa = RSA.Create(2048);
-    //     var request = new CertificateRequest(
-    //         "CN=quicshare-peer", 
-    //         rsa, 
-    //         HashAlgorithmName.SHA256, 
-    //         RSASignaturePadding.Pkcs1);
-    //
-    //     // 2. Standard usages for TLS (Added KeyEncipherment for RSA)
-    //     request.CertificateExtensions.Add(new X509KeyUsageExtension(
-    //         X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, false));
-    //     
-    //     request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
-    //         new OidCollection { 
-    //             new Oid("1.3.6.1.5.5.7.3.1"), // Server Authentication
-    //             new Oid("1.3.6.1.5.5.7.3.2")  // Client Authentication
-    //         }, false));
-    //
-    //     var notBefore = DateTime.UtcNow.AddDays(-1); 
-    //     var notAfter = notBefore.AddYears(10); 
-    //
-    //     // Generate the cert
-    //     using var cert = request.CreateSelfSigned(notBefore, notAfter);
-    //
-    //     // Export to PFX bytes
-    //     byte[] pfxBytes = cert.Export(X509ContentType.Pfx, "dummy-password");
-    //
-    //     // 3. FIX: We can safely return to EphemeralKeySet because RSA supports it flawlessly on Schannel.
-    //     // This keeps the key strictly in RAM, fixing the Win11 0x80090304 access error.
-    //     return X509CertificateLoader.LoadPkcs12(
-    //         pfxBytes, 
-    //         "dummy-password", 
-    //         X509KeyStorageFlags.PersistKeySet | X509KeyStorageFlags.Exportable);
-    // }
     private static X509Certificate2 CreateSelfSignedCertificate()
     {
-        using var ecdsa = ECDsa.Create();
+        string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        string certFolder = Path.Combine(appData, "QuicShare");
+        string certPath = Path.Combine(certFolder, "session.pfx");
+        const string pass = "password";
+        
+        // Ensure the folder exists
+        if (!Directory.Exists(certFolder))
+        {
+            Directory.CreateDirectory(certFolder);
+        }
+
+        // 2. Generate a fresh certificate in memory using ECDsa (Modern/Fast)
+        using var ecdsa = ECDsa.Create(); 
         var request = new CertificateRequest("CN=quicshare-peer", ecdsa, HashAlgorithmName.SHA256);
 
+        // Required TLS extensions for Quic/OpenSSL
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature, false));
         request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(
             new OidCollection { 
-                new Oid("1.3.6.1.5.5.7.3.1"), // Server Auth
-                new Oid("1.3.6.1.5.5.7.3.2")  // Client Auth
+                new Oid("1.3.6.1.5.5.7.3.1"), // Server Authentication
+                new Oid("1.3.6.1.5.5.7.3.2")  // Client Authentication
             }, false));
 
-        using var cert = request.CreateSelfSigned(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddYears(10));
-    
-        // Export to PFX with a password (required for certain Windows 10 versions)
-        byte[] pfxBytes = cert.Export(X509ContentType.Pfx, "password");
+        // Create the cert (valid from yesterday to 1 year from now)
+        using var ephemeralCert = request.CreateSelfSigned(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddYears(1));
 
-        var flags = X509KeyStorageFlags.Exportable;
+        // 3. Overwrite the file in AppData immediately
+        // This ensures a unique identity per run but keeps the storage path stable
+        File.WriteAllBytes(certPath, ephemeralCert.Export(X509ContentType.Pfx, pass));
 
-        if (OperatingSystem.IsWindows())
-        {
-            // MachineKeySet is the 'Magic Bullet' for Program Files + Win10 + OpenSSL.
-            // PersistKeySet is NOT needed and will cause duplicate files over time.
-            flags |= X509KeyStorageFlags.MachineKeySet;
-        }
-        else
-        {
-            flags |= X509KeyStorageFlags.EphemeralKeySet;
-        }
-
-        return new X509Certificate2(pfxBytes, "password", flags);
+        // 4. Load it back with the Exportable flag
+        // This is the 'Secret Sauce' that allows the OpenSSL msquic.dll to read the private key bits
+        return new X509Certificate2(certPath, pass, X509KeyStorageFlags.Exportable);
     }
 }
