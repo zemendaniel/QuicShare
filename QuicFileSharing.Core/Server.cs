@@ -88,36 +88,52 @@ public class Server: QuicPeer
     }
     
     private async Task AcceptConnection()
+{
+    Console.WriteLine("[Server] Waiting for incoming connection...");
+    if (listener == null)
+        throw new InvalidOperationException("Listener not initialized.");
+
+    // ADDED LOOP: Keep accepting until we get the actual winner
+    while (!token.IsCancellationRequested)
     {
         try
         {
-            Console.WriteLine("[Server] Waiting for incoming connection...");
-            if (listener == null)
-                throw new InvalidOperationException("Listener not initialized.");
-            try
-            {
-                connection = await listener.AcceptConnectionAsync(token);
-                Console.WriteLine($"[Server] Accepted connection from {connection.RemoteEndPoint}");
-            }
-            catch (AuthenticationException ex)
-            {
-                Console.WriteLine($"[Server] Authentication failed: {ex.Message}");
-                GotConnectedToPeer.TrySetResult(false);
-                CallOnDisconnected("Your peer has provided an invalid certificate.");
-                await StopAsync();
-                return;
-            }
-
+            connection = await listener.AcceptConnectionAsync(token);
+            Console.WriteLine($"[Server] Accepted connection from {connection.RemoteEndPoint}");
+            
+            // We found the winner! Fire off the handlers and exit the loop.
             GotConnectedToPeer.TrySetResult(true);
-            Console.WriteLine($"Accepted connection from {connection.RemoteEndPoint}");
             _ = Task.Run(HandleStreamsAsync, token);
             _ = Task.Run(TimeoutCheckLoopAsync, token);
+            return; 
+        }
+        catch (AuthenticationException ex)
+        {
+            // If the client explicitly canceled this specific race attempt, ignore it and keep listening
+            if (ex.Message.Contains("UserCanceled") || (ex.InnerException?.Message.Contains("UserCanceled") == true))
+            {
+                Console.WriteLine($"[Server] Ignored a losing race attempt: {ex.Message}");
+                continue; // Loop around and wait for the winner!
+            }
+
+            // If it's a REAL authentication failure (bad thumbprint), kill the server
+            Console.WriteLine($"[Server] Real Authentication failed: {ex.Message}");
+            GotConnectedToPeer.TrySetResult(false);
+            CallOnDisconnected("Your peer has provided an invalid certificate.");
+            await StopAsync();
+            return;
         }
         catch (OperationCanceledException)
         {
-            // ignored
+            // Server was stopped
+            break;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Server] Accept loop caught: {ex.Message}");
         }
     }
+}
 
     private async Task HandleStreamsAsync()
     {

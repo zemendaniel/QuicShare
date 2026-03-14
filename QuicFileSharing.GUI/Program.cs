@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -10,34 +10,38 @@ sealed class Program
     // Initialization code. Don't use any Avalonia, third-party APIs or any
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
+    // 1. Import macOS's native dlopen
+    [DllImport("libSystem.dylib")]
+    private static extern IntPtr dlopen(string path, int mode);
+
+    private const int RTLD_NOW = 0x00002;
+    private const int RTLD_GLOBAL = 0x00008;
+
     [STAThread]
     public static void Main(string[] args)
     {
         var appDir = AppContext.BaseDirectory;
 
-        // FORCE MACOS TO USE LOCAL OPENSSL AND MSQUIC
+        // FORCE MACOS TO USE LOCAL OPENSSL GLOBALLY
         if (OperatingSystem.IsMacOS())
         {
-            NativeLibrary.TryLoad(Path.Combine(appDir, "libcrypto.3.dylib"), out _);
-            NativeLibrary.TryLoad(Path.Combine(appDir, "libssl.3.dylib"), out _);
+            // Load OpenSSL globally so MSQuic can see the cryptography symbols
+            dlopen(Path.Combine(appDir, "libcrypto.3.dylib"), RTLD_NOW | RTLD_GLOBAL);
+            dlopen(Path.Combine(appDir, "libssl.3.dylib"), RTLD_NOW | RTLD_GLOBAL);
+            
+            // Now load MSQuic
             NativeLibrary.TryLoad(Path.Combine(appDir, "libmsquic.dylib"), out _);
         }
-        
-        // FORCE WINDOWS 11 TO USE OUR OPENSSL-COMPILED MSQUIC
-        if (OperatingSystem.IsWindows())
+        else if (OperatingSystem.IsWindows())
         {
-            // By giving it the absolute path to our local folder, Windows is forced
-            // to load this exact file into RAM, overriding the System32 version.
             NativeLibrary.TryLoad(Path.Combine(appDir, "msquic.dll"), out _);
         }
-
-        if (OperatingSystem.IsLinux())
+        else if (OperatingSystem.IsLinux())
         {
             NativeLibrary.TryLoad(Path.Combine(appDir, "libmsquic.so"), out _);
         }
 
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
+        BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.
